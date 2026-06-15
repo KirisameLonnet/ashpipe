@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"gopkg.in/yaml.v3"
 )
@@ -61,7 +62,26 @@ func Load(root string) (*Config, error) {
 	if cfg.Portals == nil {
 		cfg.Portals = map[string]Portal{}
 	}
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
 	return &cfg, nil
+}
+
+var validPortalNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,64}$`)
+
+func (c *Config) Validate() error {
+	for name := range c.Portals {
+		if !validPortalNamePattern.MatchString(name) || name == "." || name == ".." || name == configDir {
+			return fmt.Errorf("invalid portal name %q: use 1-64 letters, digits, dots, dashes, or underscores", name)
+		}
+	}
+	for name, host := range c.Hosts {
+		if host.Port != 0 && (host.Port < 1 || host.Port > 65535) {
+			return fmt.Errorf("host %q has invalid port %d", name, host.Port)
+		}
+	}
+	return nil
 }
 
 // Save writes config to the given workspace root.
@@ -101,6 +121,8 @@ func (c *Config) ResolvePortal(name string) (Portal, Host, error) {
 	}
 	if host.Port == 0 {
 		host.Port = 22
+	} else if host.Port < 1 || host.Port > 65535 {
+		return Portal{}, Host{}, fmt.Errorf("host %q has invalid port %d", portal.Host, host.Port)
 	}
 	return portal, host, nil
 }

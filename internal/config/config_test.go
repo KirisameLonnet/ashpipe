@@ -139,6 +139,35 @@ func TestResolvePortalMissingHost(t *testing.T) {
 	}
 }
 
+func TestResolvePortalRejectsInvalidPort(t *testing.T) {
+	for _, port := range []int{-1, 65536} {
+		cfg := &config.Config{
+			Hosts: map[string]config.Host{
+				"h": {Hostname: "host.example.com", User: "user", Port: port},
+			},
+			Portals: map[string]config.Portal{
+				"p": {Host: "h", RemotePath: "/srv"},
+			},
+		}
+		_, _, err := cfg.ResolvePortal("p")
+		if err == nil {
+			t.Fatalf("expected invalid port %d to be rejected", port)
+		}
+	}
+}
+
+func TestValidateRejectsUnsafePortalName(t *testing.T) {
+	cfg := &config.Config{
+		Hosts: map[string]config.Host{},
+		Portals: map[string]config.Portal{
+			"../escape": {Host: "h", RemotePath: "/srv"},
+		},
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected unsafe portal name to be rejected")
+	}
+}
+
 func TestPasswordWarning(t *testing.T) {
 	cfg := &config.Config{
 		Hosts: map[string]config.Host{

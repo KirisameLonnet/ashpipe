@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/KirisameLonnet/ashpipe/internal/config"
-	"github.com/KirisameLonnet/ashpipe/internal/portal"
+	portalpath "github.com/KirisameLonnet/ashpipe/internal/portal"
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +21,9 @@ var addCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		portalName := args[0]
 		target := args[1]
+		if err := portalpath.ValidateName(portalName); err != nil {
+			return err
+		}
 
 		userHost, remotePath, ok := strings.Cut(target, ":")
 		if !ok {
@@ -50,34 +54,29 @@ var addCmd = &cobra.Command{
 		}
 
 		// Derive a host alias from hostname.
-		hostAlias := portalName + "-host"
-		// Reuse existing host entry if hostname matches.
-		for alias, h := range cfg.Hosts {
-			if h.Hostname == hostname && h.User == user {
-				hostAlias = alias
-				break
-			}
-		}
-
 		identityFile, _ := cmd.Flags().GetString("identity-file")
 		password, _ := cmd.Flags().GetString("password")
-
-		cfg.Hosts[hostAlias] = config.Host{
+		newHost := config.Host{
 			Hostname:     hostname,
 			User:         user,
 			IdentityFile: identityFile,
 			Password:     password,
+		}
+
+		hostAlias := selectHostAlias(cfg, portalName, newHost)
+		if _, ok := cfg.Hosts[hostAlias]; !ok {
+			cfg.Hosts[hostAlias] = newHost
 		}
 		cfg.Portals[portalName] = config.Portal{
 			Host:       hostAlias,
 			RemotePath: remotePath,
 		}
 
-		if err := config.Save(root, cfg); err != nil {
+		if err := ensurePortalLink(root, portalName); err != nil {
 			return err
 		}
 
-		if err := ensurePortalLink(root, portalName); err != nil {
+		if err := config.Save(root, cfg); err != nil {
 			return err
 		}
 
@@ -98,8 +97,11 @@ var addCmd = &cobra.Command{
 }
 
 func ensurePortalLink(root, name string) error {
-	mountDir := portal.MountDir(root, name)
-	linkDir := portal.LinkDir(root, name)
+	if err := portalpath.ValidateName(name); err != nil {
+		return err
+	}
+	mountDir := portalpath.MountDir(root, name)
+	linkDir := portalpath.LinkDir(root, name)
 	if err := os.MkdirAll(mountDir, 0o755); err != nil {
 		return err
 	}
@@ -128,14 +130,69 @@ func ensurePortalLink(root, name string) error {
 	return os.Symlink(mountDir, linkDir)
 }
 
+func selectHostAlias(cfg *config.Config, portalName string, newHost config.Host) string {
+	type candidate struct {
+		alias string
+		host  config.Host
+	}
+	var candidates []candidate
+	for alias, h := range cfg.Hosts {
+		if sameEndpoint(h, newHost) {
+			candidates = append(candidates, candidate{alias: alias, host: h})
+		}
+	}
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].alias < candidates[j].alias
+	})
+	for _, c := range candidates {
+		if canReuseHost(c.host, newHost) {
+			return c.alias
+		}
+	}
+
+	base := portalName + "-host"
+	alias := base
+	for i := 2; ; i++ {
+		if _, exists := cfg.Hosts[alias]; !exists {
+			return alias
+		}
+		alias = fmt.Sprintf("%s-%d", base, i)
+	}
+}
+
+func sameEndpoint(a, b config.Host) bool {
+	return a.Hostname == b.Hostname && a.User == b.User && effectivePort(a.Port) == effectivePort(b.Port)
+}
+
+func canReuseHost(existing, requested config.Host) bool {
+	if !sameEndpoint(existing, requested) {
+		return false
+	}
+	if requested.IdentityFile == "" && requested.Password == "" {
+		return true
+	}
+	return existing.IdentityFile == requested.IdentityFile && existing.Password == requested.Password
+}
+
+func effectivePort(port int) int {
+	if port == 0 {
+		return 22
+	}
+	return port
+}
+
 func init() {
 	addCmd.Flags().StringP("identity-file", "i", "", "SSH private key path")
 	addCmd.Flags().StringP("password", "p", "", "SSH password (insecure)")
 	rootCmd.AddCommand(addCmd)
 }
 
+const agentContextMarker = "<!-- ashpipe:managed -->"
+
 func writeAgentContext(root string, cfg *config.Config) error {
 	var sb strings.Builder
+	sb.WriteString(agentContextMarker)
+	sb.WriteString("\n")
 	sb.WriteString("# ashpipe Remote Workspace\n\n")
 	sb.WriteString("This workspace contains remote portal directories managed by ashpipe. Public portal paths are symlinks to private SSHFS mount points outside the workspace.\n\n")
 	sb.WriteString("## Safety Warning\n\n")
@@ -143,7 +200,13 @@ func writeAgentContext(root string, cfg *config.Config) error {
 	sb.WriteString("- Use `ashpipe unmount` and `ashpipe remove`; ashpipe manages portal symlinks and SSHFS mount points.\n")
 	sb.WriteString("- If manual cleanup is unavoidable, unmount first and verify the path is no longer a mount point. Deleting a live SSHFS/FUSE mount can delete remote files.\n\n")
 	sb.WriteString("## Portals\n\n")
-	for name, p := range cfg.Portals {
+	names := make([]string, 0, len(cfg.Portals))
+	for name := range cfg.Portals {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		p := cfg.Portals[name]
 		h := cfg.Hosts[p.Host]
 		sb.WriteString(fmt.Sprintf("- **`%s/`** → `%s@%s:%s`\n", name, h.User, h.Hostname, p.RemotePath))
 	}
@@ -154,9 +217,21 @@ func writeAgentContext(root string, cfg *config.Config) error {
 
 	content := sb.String()
 	for _, name := range []string{"CLAUDE.md", "AGENTS.md"} {
-		if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o644); err != nil {
+		path := filepath.Join(root, name)
+		if existing, err := os.ReadFile(path); err == nil && !isManagedAgentContext(string(existing)) {
+			fmt.Fprintf(os.Stderr, "[ashpipe] %s already exists and is not ashpipe-managed; leaving it unchanged\n", path)
+			continue
+		} else if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func isManagedAgentContext(content string) bool {
+	return strings.Contains(content, agentContextMarker) ||
+		strings.HasPrefix(content, "# ashpipe Remote Workspace\n\nThis workspace contains remote portal directories managed by ashpipe.")
 }

@@ -38,3 +38,19 @@ func TestBaseMountDirLinuxUsesMedia(t *testing.T) {
 		t.Fatalf("baseMountDirFor(linux) = %q, want %q", got, want)
 	}
 }
+
+func TestValidateName(t *testing.T) {
+	for _, name := range []string{"prod", "dev_1", "release.v1", "host-2"} {
+		if err := ValidateName(name); err != nil {
+			t.Fatalf("ValidateName(%q): %v", name, err)
+		}
+	}
+}
+
+func TestValidateNameRejectsUnsafeNames(t *testing.T) {
+	for _, name := range []string{"", ".", "..", ".ashpipe", "../prod", "prod/name", "name with space"} {
+		if err := ValidateName(name); err == nil {
+			t.Fatalf("ValidateName(%q) unexpectedly succeeded", name)
+		}
+	}
+}

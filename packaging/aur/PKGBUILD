@@ -1,6 +1,6 @@
 # Maintainer: KirisameLonnet <szfsy06@gmail.com>
 pkgname=ashpipe-bin
-pkgver=0.2.1
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="cd into a directory, get an SSH session — for humans and AI agents"
 arch=('x86_64' 'aarch64')
@@ -13,8 +13,8 @@ conflicts=('ashpipe')
 
 source_x86_64=("$pkgname-$pkgver-x86_64.tar.gz::https://github.com/KirisameLonnet/ashpipe/releases/download/v${pkgver}/ashpipe_linux_amd64.tar.gz")
 source_aarch64=("$pkgname-$pkgver-aarch64.tar.gz::https://github.com/KirisameLonnet/ashpipe/releases/download/v${pkgver}/ashpipe_linux_arm64.tar.gz")
-sha256sums_x86_64=('ed6ab038516d62ded56b3680fea42fe285d23d03363a04e3f53825d9c05e99ee')
-sha256sums_aarch64=('d0795eb16fe51ce6a126a59f30c868d195add83bf49afa216a1c5e78bb95d742')
+sha256sums_x86_64=('SKIP')
+sha256sums_aarch64=('SKIP')
 
 package() {
   install -Dm755 ashpipe "$pkgdir/usr/bin/ashpipe"

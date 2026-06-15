@@ -3,10 +3,23 @@ package portal
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 )
+
+var validNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,64}$`)
+
+// ValidateName rejects names that could escape the workspace or collide with
+// ashpipe's private config directory.
+func ValidateName(name string) error {
+	if !validNamePattern.MatchString(name) || name == "." || name == ".." || name == ".ashpipe" {
+		return fmt.Errorf("invalid portal name %q: use 1-64 letters, digits, dots, dashes, or underscores", name)
+	}
+	return nil
+}
 
 // LinkDir is the user-facing portal path in the workspace.
 func LinkDir(root, name string) string {

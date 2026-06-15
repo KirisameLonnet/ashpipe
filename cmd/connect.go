@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -8,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/KirisameLonnet/ashpipe/internal/config"
 	"github.com/KirisameLonnet/ashpipe/internal/detect"
@@ -132,13 +134,14 @@ func buildSSHArgv(host config.Host, remotePath string) []string {
 		"-t",
 		"-p", fmt.Sprintf("%d", host.Port),
 		"-o", "StrictHostKeyChecking=yes",
+		"-o", "ConnectTimeout=10",
 	}
 	if host.IdentityFile != "" {
 		args = append(args, "-i", expandSSHHome(host.IdentityFile))
 	}
 	// Build remote command: cd to target dir then start login shell.
 	// Use an absolute path — ~ has already been resolved by resolveRemotePath.
-	remoteCmd := fmt.Sprintf("cd %q && exec $SHELL -l", remotePath)
+	remoteCmd := fmt.Sprintf("cd %s && exec \"${SHELL:-/bin/sh}\" -l", posixShellQuote(remotePath))
 	args = append(args, fmt.Sprintf("%s@%s", host.User, host.Hostname), remoteCmd)
 	return args
 }
@@ -158,19 +161,22 @@ func resolveRemotePath(host config.Host, remotePath string) string {
 	args := []string{
 		"-p", fmt.Sprintf("%d", host.Port),
 		"-o", "StrictHostKeyChecking=yes",
+		"-o", "ConnectTimeout=10",
 		"-o", "BatchMode=yes",
 	}
 	if host.IdentityFile != "" {
 		args = append(args, "-i", expandSSHHome(host.IdentityFile))
 	}
-	args = append(args, fmt.Sprintf("%s@%s", host.User, host.Hostname), "echo $HOME")
+	args = append(args, fmt.Sprintf("%s@%s", host.User, host.Hostname), `printf '%s\n' "$HOME"`)
 
-	out, err := exec.Command(sshPath, args...).Output()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, sshPath, args...).Output()
 	if err != nil {
 		return remotePath
 	}
 
-	home := strings.TrimSpace(string(out))
+	home := parseRemoteHomeOutput(string(out))
 	if home == "" {
 		return remotePath
 	}
@@ -202,8 +208,29 @@ func findSSH() (string, error) {
 
 func expandSSHHome(path string) string {
 	if len(path) >= 2 && path[:2] == "~/" {
-		home, _ := os.UserHomeDir()
+		home, err := os.UserHomeDir()
+		if err != nil || home == "" {
+			return path
+		}
 		return filepath.Join(home, path[2:])
 	}
 	return path
+}
+
+func parseRemoteHomeOutput(out string) string {
+	lines := strings.Split(strings.ReplaceAll(out, "\r\n", "\n"), "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := strings.TrimSpace(lines[i])
+		if strings.HasPrefix(line, "/") {
+			return line
+		}
+	}
+	return ""
+}
+
+func posixShellQuote(s string) string {
+	if s == "" {
+		return "''"
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
