@@ -2,29 +2,29 @@ package hook
 
 import "fmt"
 
-// Zsh returns the zsh hook script to be eval'd in ~/.zshrc.
-func Zsh() string {
-	return `
+// Zsh returns the zsh hook script, using exe as the absolute path to the binary.
+func Zsh(exe string) string {
+	return fmt.Sprintf(`
 _ashpipe_hook() {
   local portal
-  portal="$(ashpipe detect 2>/dev/null)"
+  portal="$(%s detect 2>/dev/null)"
   if [[ -n "$portal" ]]; then
-    ashpipe connect "$portal"
+    %s connect "$portal"
   fi
 }
 autoload -Uz add-zsh-hook
 add-zsh-hook chpwd _ashpipe_hook
-`
+`, exe, exe)
 }
 
-// Bash returns the bash hook script to be eval'd in ~/.bashrc.
-func Bash() string {
-	return `
+// Bash returns the bash hook script.
+func Bash(exe string) string {
+	return fmt.Sprintf(`
 _ashpipe_hook() {
   local portal
-  portal="$(ashpipe detect 2>/dev/null)"
+  portal="$(%s detect 2>/dev/null)"
   if [[ -n "$portal" ]]; then
-    ashpipe connect "$portal"
+    %s connect "$portal"
   fi
 }
 if [[ -n "$PROMPT_COMMAND" ]]; then
@@ -32,30 +32,30 @@ if [[ -n "$PROMPT_COMMAND" ]]; then
 else
   PROMPT_COMMAND="_ashpipe_hook"
 fi
-`
+`, exe, exe)
 }
 
 // Fish returns the fish hook script.
-func Fish() string {
-	return `
+func Fish(exe string) string {
+	return fmt.Sprintf(`
 function _ashpipe_hook --on-variable PWD
-  set portal (ashpipe detect 2>/dev/null)
+  set portal (%s detect 2>/dev/null)
   if test -n "$portal"
-    ashpipe connect $portal
+    %s connect $portal
   end
 end
-`
+`, exe, exe)
 }
 
-// Print outputs the hook script for the given shell.
-func Print(shell string) error {
+// Print outputs the hook script for the given shell, embedding the binary path.
+func Print(shell, exe string) error {
 	switch shell {
 	case "zsh":
-		fmt.Print(Zsh())
+		fmt.Print(Zsh(exe))
 	case "bash":
-		fmt.Print(Bash())
+		fmt.Print(Bash(exe))
 	case "fish":
-		fmt.Print(Fish())
+		fmt.Print(Fish(exe))
 	default:
 		return fmt.Errorf("unsupported shell %q; supported: zsh, bash, fish", shell)
 	}

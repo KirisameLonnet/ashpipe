@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/KirisameLonnet/ashpipe/internal/hook"
 	"github.com/spf13/cobra"
 )
@@ -26,7 +28,11 @@ Add the line above to your home-manager configuration instead.`,
 	Args:      cobra.ExactArgs(1),
 	ValidArgs: []string{"zsh", "bash", "fish"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return hook.Print(args[0])
+		exe, err := os.Executable()
+		if err != nil {
+			return err
+		}
+		return hook.Print(args[0], exe)
 	},
 }
 
