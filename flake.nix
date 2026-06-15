@@ -31,6 +31,17 @@
           };
         };
 
+        # Usage in home-manager after adding this flake as input:
+        #
+        #   inputs.ashpipe.url = "github:KirisameLonnet/ashpipe";
+        #
+        #   home.packages = [ inputs.ashpipe.packages.${system}.default ];
+        #   programs.zsh.initExtra = ''
+        #     eval "$(ashpipe hook zsh)"
+        #   '';
+        #
+        # Because ashpipe is in PATH via home.packages, the hook just works.
+
         devShells.default = pkgs.mkShell {
           buildInputs = [
             pkgs.go

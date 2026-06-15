@@ -82,13 +82,46 @@ On **NixOS**, sshfs is included in the dev shell and available as `pkgs.sshfs-fu
 
 ## Install
 
+Once installed via any method below, the hook just works — no full path needed:
 ```bash
-# From source
-go install github.com/KirisameLonnet/ashpipe@latest
+eval "$(ashpipe hook zsh)"   # or bash / fish
+```
 
-# With Nix
-nix build github:KirisameLonnet/ashpipe
-nix develop  # dev shell with go + sshfs + LSP
+### Homebrew (macOS + Linux)
+```bash
+brew install KirisameLonnet/tap/ashpipe
+```
+
+### AUR (Arch Linux)
+```bash
+yay -S ashpipe-bin
+# or: paru -S ashpipe-bin
+```
+
+### Nix / home-manager
+```nix
+# flake.nix
+inputs.ashpipe.url = "github:KirisameLonnet/ashpipe";
+
+# home.nix
+home.packages = [ inputs.ashpipe.packages.${system}.default ];
+programs.zsh.initExtra = ''
+  eval "$(ashpipe hook zsh)"
+'';
+```
+
+### Go
+```bash
+go install github.com/KirisameLonnet/ashpipe@latest
+```
+
+### Build from source
+```bash
+git clone https://github.com/KirisameLonnet/ashpipe
+cd ashpipe
+go build -o ashpipe .
+# Move to somewhere in your PATH, e.g.:
+sudo mv ashpipe /usr/local/bin/
 ```
 
 ## Quick start
