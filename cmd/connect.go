@@ -53,12 +53,21 @@ func init() {
 }
 
 func connectPortal(host config.Host, portal config.Portal, localDir string) error {
-	// Mount SSHFS if not already mounted.
-	if !sshfs.IsMounted(localDir) {
+	// Mount SSHFS for file transparency. If it fails (e.g. host runs dropbear
+	// without sftp-server), warn and continue — shell access still works.
+	sshfsMounted := sshfs.IsMounted(localDir)
+	if !sshfsMounted {
 		fmt.Fprintf(os.Stderr, "[ashpipe] Mounting %s@%s:%s → %s\n",
 			host.User, host.Hostname, portal.RemotePath, localDir)
 		if err := sshfs.Mount(host, portal.RemotePath, localDir); err != nil {
-			return fmt.Errorf("sshfs mount: %w", err)
+			fmt.Fprintf(os.Stderr,
+				"[ashpipe] WARNING: SSHFS mount failed (%v)\n"+
+					"          File transparency unavailable — portal directory will be empty.\n"+
+					"          Shell session will still work normally.\n",
+				err,
+			)
+		} else {
+			sshfsMounted = true
 		}
 	}
 
@@ -97,8 +106,8 @@ func connectPortal(host config.Host, portal config.Portal, localDir string) erro
 	signal.Stop(sigCh)
 	close(sigCh)
 
-	// Unmount SSHFS now that the session has ended.
-	if sshfs.IsMounted(localDir) {
+	// Unmount SSHFS only if we mounted it successfully.
+	if sshfsMounted && sshfs.IsMounted(localDir) {
 		fmt.Fprintf(os.Stderr, "\n[ashpipe] Unmounting %s ...\n", localDir)
 		if err := sshfs.Unmount(localDir); err != nil {
 			fmt.Fprintf(os.Stderr, "[ashpipe] Warning: unmount failed: %v\n", err)

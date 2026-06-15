@@ -19,8 +19,9 @@ import (
 type sessionKey struct{ host string }
 
 type session struct {
-	sh   *shell.Shell
-	sftp *sftp.Client
+	sh       *shell.Shell
+	sftp     *sftp.Client
+	homeDir  string // resolved $HOME on the remote host
 }
 
 type Server struct {
@@ -126,7 +127,13 @@ func (s *Server) getSession(hostHint string) (*session, config.Portal, config.Ho
 		sc = s
 	}
 
-	sess := &session{sh: sh, sftp: sc}
+	// Resolve $HOME once so we can expand ~ in file paths for SFTP.
+	homeDir := "~"
+	if r, err := sh.Exec("echo $HOME", 5*time.Second); err == nil {
+		homeDir = strings.TrimSpace(r.Stdout)
+	}
+
+	sess := &session{sh: sh, sftp: sc, homeDir: homeDir}
 	s.sessions[key] = sess
 	return sess, portal, host, nil
 }
@@ -149,16 +156,37 @@ func (s *Server) resolveHost(hint string) (config.Portal, config.Host, error) {
 	return config.Portal{}, config.Host{}, fmt.Errorf("no portals configured")
 }
 
-// translatePath converts a local portal path to a remote path.
+// translatePath converts a local portal path to a remote path, expanding ~ using
+// the session's resolved $HOME.
 func (s *Server) translatePath(localPath string, portal config.Portal) string {
+	// Expand tilde using the session's resolved home directory.
+	if sess, ok := s.sessionForPortal(portal); ok && sess.homeDir != "" && sess.homeDir != "~" {
+		if localPath == "~" {
+			return sess.homeDir
+		}
+		if strings.HasPrefix(localPath, "~/") {
+			return sess.homeDir + localPath[1:]
+		}
+	}
+
+	// Translate local portal path → remote path.
 	for name := range s.cfg.Portals {
 		portalDir := filepath.Join(s.root, name)
 		if rel, err := filepath.Rel(portalDir, localPath); err == nil && !strings.HasPrefix(rel, "..") {
 			return filepath.Join(portal.RemotePath, rel)
 		}
 	}
-	// Already an absolute remote path or relative — return as-is.
 	return localPath
+}
+
+// sessionForPortal finds the active session for a given portal.
+func (s *Server) sessionForPortal(portal config.Portal) (*session, bool) {
+	host, ok := s.cfg.Hosts[portal.Host]
+	if !ok {
+		return nil, false
+	}
+	sess, ok := s.sessions[sessionKey{host: host.Hostname}]
+	return sess, ok
 }
 
 func (s *Server) handleBash(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
