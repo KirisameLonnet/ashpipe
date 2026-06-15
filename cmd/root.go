@@ -22,6 +22,10 @@ Quick start:
   cd prod/                            # you're now on the remote host`,
 }
 
+func SetVersion(version string) {
+	rootCmd.Version = version
+}
+
 func Execute() error {
 	return rootCmd.Execute()
 }
