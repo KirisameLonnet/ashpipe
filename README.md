@@ -50,7 +50,19 @@ nix build
 ./result/bin/ashpipe --help
 ```
 
-Add to your NixOS `configuration.nix` or `home.nix`:
+**Shell hook via home-manager** (do not echo directly into `~/.zshrc` on managed systems):
+
+```nix
+programs.zsh.initExtra = ''
+  eval "$(ashpipe hook zsh)"
+'';
+# or for bash:
+programs.bash.initExtra = ''
+  eval "$(ashpipe hook bash)"
+'';
+```
+
+**Package** — add to your NixOS `configuration.nix` or `home.nix`:
 
 ```nix
 # flake input
@@ -89,9 +101,8 @@ ashpipe init
 # 2. Add a portal
 ashpipe add prod ubuntu@server.example.com:/opt/app
 
-# 3. Add shell hook to ~/.zshrc (or ~/.bashrc / fish)
-echo 'eval "$(ashpipe hook zsh)"' >> ~/.zshrc
-source ~/.zshrc
+# 3. Add shell hook — run this to see the line to add to your config:
+ashpipe hook zsh   # or bash / fish
 
 # 4. Connect by entering the portal directory
 cd prod/          # ← terminal is now a remote SSH session on ubuntu@server.example.com:/opt/app

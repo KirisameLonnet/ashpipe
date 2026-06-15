@@ -13,7 +13,7 @@ var rootCmd = &cobra.Command{
   ashpipe mcp                      →  MCP server for Claude Code / Codex
 
 Quick start:
-  eval "$(ashpipe hook zsh)"          # add to ~/.zshrc
+  ashpipe hook zsh                    # add output to your shell config
   ashpipe add prod ubuntu@host:/path remote-space-prod
   cd remote-space-prod/               # you're now on the remote host`,
 }

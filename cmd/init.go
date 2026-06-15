@@ -37,8 +37,8 @@ Run this once per workspace, then use 'ashpipe add' to define portals.`,
 		fmt.Println("Next steps:")
 		fmt.Println("  1. Add a portal:")
 		fmt.Println("       ashpipe add <portal-name> <user@host:/remote/path>")
-		fmt.Println("  2. Set up shell hook (add to ~/.zshrc or ~/.bashrc):")
-		fmt.Println("       eval \"$(ashpipe hook zsh)\"")
+		fmt.Println("  2. Add the shell hook to your shell's startup config:")
+		fmt.Println("       run `ashpipe hook <zsh|bash|fish>` and follow the instructions")
 		fmt.Println("  3. Connect by entering the portal directory:")
 		fmt.Println("       cd <portal-name>/")
 		return nil
