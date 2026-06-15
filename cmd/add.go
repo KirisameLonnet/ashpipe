@@ -107,18 +107,16 @@ func init() {
 func writeAgentContext(root string, cfg *config.Config) error {
 	var sb strings.Builder
 	sb.WriteString("# ashpipe Remote Workspace\n\n")
-	sb.WriteString("This workspace contains remote portal directories managed by ashpipe.\n\n")
+	sb.WriteString("This workspace contains remote portal directories managed by ashpipe. Portal directories are intended to be mounted with SSHFS and used as normal local directories.\n\n")
 	sb.WriteString("## Portals\n\n")
 	for name, p := range cfg.Portals {
 		h := cfg.Hosts[p.Host]
 		sb.WriteString(fmt.Sprintf("- **`%s/`** → `%s@%s:%s`\n", name, h.User, h.Hostname, p.RemotePath))
 	}
 	sb.WriteString("\n## Agent Instructions\n\n")
-	sb.WriteString("When working inside a portal directory:\n")
-	sb.WriteString("- Use `ssh:bash` for running commands (they execute on the remote host)\n")
-	sb.WriteString("- Use `ssh:read`, `ssh:write`, `ssh:edit` for file operations\n")
-	sb.WriteString("- File paths are automatically translated from local portal path to remote path\n")
-	sb.WriteString("- The portal directory is also SSHFS-mounted, so native Read/Write tools work transparently\n")
+	sb.WriteString("- Treat portal directories as ordinary workspace directories. Use the default built-in file tools for read, edit, write, search, and diff.\n")
+	sb.WriteString("- Do not switch to ashpipe-specific tools for normal file work. If a portal is not mounted, ask to run `ashpipe mount` from the workspace root.\n")
+	sb.WriteString("- Shell commands run by the agent still execute locally unless explicitly run through a remote shell. Prefer native file operations for code changes inside mounted portals.\n")
 
 	content := sb.String()
 	for _, name := range []string{"CLAUDE.md", "AGENTS.md"} {

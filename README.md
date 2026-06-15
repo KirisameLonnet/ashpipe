@@ -6,7 +6,7 @@
 cd workspace/remote-space-prod/   →   terminal becomes a remote SSH session
 ```
 
-ashpipe turns a local directory into a transparent portal to a remote host. File access goes through SSHFS (you see real remote files), and the terminal pty is handed directly to the remote shell. For AI agents (Claude Code, Codex), the same host is accessible via MCP tools.
+ashpipe turns a local directory into a transparent portal to a remote host. File access goes through SSHFS (you see real remote files), and the terminal pty is handed directly to the remote shell. For AI agents (Claude Code, Codex), mounted portal directories are ordinary local directories, so built-in file tools can read, edit, diff, and search without switching to ashpipe-specific tools.
 
 ## How it works
 
@@ -20,9 +20,9 @@ workspace/
 
 **User path** — shell hook detects portal directory on `cd`, mounts SSHFS, hands terminal to remote shell. On `exit`, SSHFS is automatically unmounted.
 
-**Agent path** — `ashpipe mcp` starts an MCP server (stdio) that exposes `bash`, `read`, `write`, `edit`, `diff`, `ls`, `glob` tools backed by the same SSH connection.
+**Agent path** — `ashpipe mount` mounts portal directories via SSHFS without starting an interactive SSH shell. Agents then use their default built-in file tools directly against the mounted directory.
 
-Both paths share one SSH connection pool — no duplicate handshakes.
+Both paths are system-native: humans get a remote pty, agents get real mounted directories.
 
 ## Requirements
 
@@ -151,7 +151,10 @@ ashpipe add prod ubuntu@server.example.com:/opt/app
 # 3. Add shell hook — run this to see the line to add to your config:
 ashpipe hook zsh   # or bash / fish
 
-# 4. Connect by entering the portal directory
+# 4. Mount portals for agent-native file access
+ashpipe mount       # mounted portal dirs behave like normal local dirs
+
+# 5. Connect by entering the portal directory
 cd prod/          # ← terminal is now a remote SSH session on ubuntu@server.example.com:/opt/app
 pwd               # returns /opt/app
 exit              # back to local shell, SSHFS unmounted automatically
@@ -163,10 +166,11 @@ exit              # back to local shell, SSHFS unmounted automatically
 ashpipe init                              Initialize workspace in current directory
 ashpipe add <name> <user@host:/path>      Add a portal
 ashpipe remove <name> [--force]           Remove a portal (--force deletes non-empty dir)
+ashpipe mount [name]                      Mount one/all portals via SSHFS
+ashpipe unmount [name]                    Unmount one/all portals
 ashpipe connect <name>                    Connect to portal (also triggered by cd)
 ashpipe status                            Show portal mount status
 ashpipe hook zsh|bash|fish               Print shell hook to eval
-ashpipe mcp                               Start MCP server (stdio)
 ```
 
 ## SSH authentication
@@ -197,46 +201,16 @@ hosts:
 
 ## AI agent integration
 
-### Claude Code
+The agent path is SSHFS, not tool switching:
 
-Add to `~/.claude/settings.json`:
-
-```json
-{
-  "mcpServers": {
-    "ssh": {
-      "command": "ashpipe",
-      "args": ["mcp"],
-      "type": "stdio"
-    }
-  }
-}
+```bash
+cd my-workspace
+ashpipe mount
 ```
 
-### OpenAI Codex CLI
+After that, `prod/`, `dev/`, and other portal directories are real mounted directories. Claude Code and Codex should use their default built-in tools for reading, editing, writing, searching, and diffing files. No ashpipe-specific tool choice is required for normal file work.
 
-Add to `~/.codex/config.yaml`:
-
-```yaml
-mcp_servers:
-  - name: ssh
-    command: ashpipe mcp
-    type: stdio
-```
-
-### Available MCP tools
-
-| Tool | Description |
-|------|-------------|
-| `ssh:bash` | Run a command on the remote host (persistent shell, maintains cwd) |
-| `ssh:read` | Read a remote file |
-| `ssh:write` | Write a remote file |
-| `ssh:edit` | Edit a file with old_string → new_string (same API as Claude Code's Edit) |
-| `ssh:diff` | Unified diff between two remote files |
-| `ssh:ls` | List a remote directory |
-| `ssh:glob` | Find files matching a pattern |
-
-File paths are automatically translated: local portal paths → remote paths.
+Generated `CLAUDE.md` and `AGENTS.md` files tell agents to treat portal directories as ordinary workspace directories and to ask for `ashpipe mount` if the mount is missing.
 
 ## Multiple portals
 
@@ -248,7 +222,8 @@ ashpipe add dev developer@dev.example.com:/home/dev/project
 
 # cd prod/   → SSH session on prod
 # cd dev/    → SSH session on dev
-# Agent can target a specific portal with the `host` parameter
+# Agent-native file access:
+ashpipe mount
 ```
 
 ## Security notes
