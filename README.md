@@ -225,10 +225,17 @@ ashpipe ships as a Claude Code plugin. Once installed, portals auto-mount on ses
 **Install the plugin:**
 
 ```bash
-# From the ashpipe repository (after cloning or installing)
-claude plugin install ashpipe
+# 1. Clone the repository (if you haven't already)
+git clone https://github.com/KirisameLonnet/ashpipe
+cd ashpipe
 
-# Or add to your settings.json manually:
+# 2. Copy the plugin files to your Claude Code skills directory
+mkdir -p ~/.claude/skills/ashpipe
+cp -r .claude-plugin skills hooks ~/.claude/skills/ashpipe/
+
+# 3. Enable the plugin in your settings
+#    Open ~/.claude/settings.json (or project .claude/settings.json)
+#    and add:
 ```
 
 ```json
@@ -237,6 +244,21 @@ claude plugin install ashpipe
     "ashpipe": true
   }
 }
+```
+
+Alternatively, if you installed ashpipe via Nix/homebrew/go and want to keep plugin files alongside the repo:
+
+```bash
+# Symlink instead of copy — plugin updates when you git pull
+ln -sfn /path/to/ashpipe ~/.claude/skills/ashpipe
+```
+
+**Verify installation:**
+
+```bash
+# In Claude Code, type:
+/ashpipe-mount
+# Should show portal status or "Not in an ashpipe workspace"
 ```
 
 **What the plugin does:**
