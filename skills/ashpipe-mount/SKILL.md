@@ -20,6 +20,7 @@ This workspace uses ashpipe to transparently access remote SSH hosts. Portal dir
 - Portal directories are symlinks to private SSHFS mount points outside the workspace
 - When mounted, use standard Read/Write/Edit/Bash tools directly on portal paths — they are real files on the remote host
 - NEVER delete portal directories with `rm -rf` — use `ashpipe unmount` and `ashpipe remove`
+- In Codex, do not fall back to MCP or SSH file tools for normal portal file operations
 
 ### Commands
 
@@ -36,3 +37,15 @@ This workspace uses ashpipe to transparently access remote SSH hosts. Portal dir
 2. Work with files inside portal directories using normal tools
 3. Shell commands inside portals execute locally against SSHFS-mounted files
 4. For remote-only commands (systemctl, apt, etc.), use `ssh user@host "command"`
+
+### Codex setup
+
+When Codex enters an ashpipe workspace, run:
+
+```bash
+scripts/ashpipe-codex-setup.sh
+```
+
+The setup script locates `.ashpipe/config.yaml`, verifies the `ashpipe` binary,
+runs `ashpipe mount`, and prints `ashpipe status`. After that, portal directories
+should be treated as ordinary workspace directories.

@@ -252,6 +252,76 @@ claude plugin install ashpipe
 3. Agent uses built-in tools on portal directories — no special commands needed
 4. If a portal is not mounted, agent knows to run `ashpipe mount`
 
+### Codex plugin
+
+ashpipe also ships a Codex plugin manifest and skill in this repository:
+
+- `.codex-plugin/plugin.json`
+- `skills/ashpipe-mount/SKILL.md`
+- `scripts/ashpipe-codex-setup.sh`
+
+**Install the plugin from a local clone:**
+
+```bash
+git clone https://github.com/KirisameLonnet/ashpipe
+cd ashpipe
+
+# Make the repo visible to the Codex personal plugin marketplace.
+mkdir -p ~/plugins ~/.agents/plugins
+ln -sfn "$PWD" ~/plugins/ashpipe
+```
+
+Add this entry to `~/.agents/plugins/marketplace.json` under the `plugins`
+array, preserving any existing entries:
+
+```json
+{
+  "name": "ashpipe",
+  "source": {
+    "source": "local",
+    "path": "./plugins/ashpipe"
+  },
+  "policy": {
+    "installation": "AVAILABLE",
+    "authentication": "ON_INSTALL"
+  },
+  "category": "Productivity"
+}
+```
+
+If the marketplace file does not exist yet, create it as:
+
+```json
+{
+  "name": "personal",
+  "interface": {
+    "displayName": "Personal"
+  },
+  "plugins": [
+    {
+      "name": "ashpipe",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ashpipe"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
+```
+
+**What the Codex plugin does:**
+
+- Activates when `.ashpipe/config.yaml` or ashpipe portal work is detected
+- Tells Codex to run `ashpipe mount` before reading or editing portal contents
+- Provides `scripts/ashpipe-codex-setup.sh` for repeatable workspace preparation
+- Tells Codex to use native file tools on mounted portal directories, not MCP or SSH file fallbacks
+- Repeats the safety rule: never manually `rm -rf` portal symlinks or mount directories
+
 ### Manual agent setup (without plugin)
 
 If you prefer not to install the plugin:
