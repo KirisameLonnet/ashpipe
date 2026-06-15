@@ -110,6 +110,21 @@ programs.zsh.initExtra = ''
 '';
 ```
 
+### Debian / Ubuntu (.deb)
+```bash
+# Download from https://github.com/KirisameLonnet/ashpipe/releases
+sudo dpkg -i ashpipe_*_amd64.deb
+# or for arm64:
+sudo dpkg -i ashpipe_*_arm64.deb
+```
+
+### Fedora / RHEL / openSUSE (.rpm)
+```bash
+sudo rpm -i ashpipe_*_amd64.rpm
+# or for arm64:
+sudo rpm -i ashpipe_*_arm64.rpm
+```
+
 ### Go
 ```bash
 go install github.com/KirisameLonnet/ashpipe@latest

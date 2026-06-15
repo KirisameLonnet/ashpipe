@@ -22,6 +22,30 @@ archives:
     files:
       - README.md
 
+nfpms:
+  - id: ashpipe
+    package_name: ashpipe
+    homepage: "https://github.com/KirisameLonnet/ashpipe"
+    maintainer: "KirisameLonnet <szfsy06@gmail.com>"
+    description: "cd into a directory, get an SSH session — for humans and AI agents"
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    dependencies:
+      - openssh-client
+    recommends:
+      - sshfs
+    bindir: /usr/bin
+    section: utils
+    priority: optional
+    overrides:
+      rpm:
+        dependencies:
+          - openssh-clients
+        recommends:
+          - fuse-sshfs
+
 checksum:
   name_template: "checksums.txt"
 
