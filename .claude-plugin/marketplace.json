@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "name": "ashpipe",
+  "plugins": [
+    {
+      "name": "ashpipe",
+      "description": "cd into a directory, get an SSH session — transparent remote workspace portals with auto-mount",
+      "source": "."
+    }
+  ]
+}
