@@ -19,10 +19,10 @@
       in {
         packages.default = pkgs.buildGoModule {
           pname = "ashpipe";
-          version = "0.3.0";
+          version = "0.3.1";
           src = ./.;
           vendorHash = null;  # vendor/ directory is included in source
-          ldflags = [ "-s" "-w" "-X main.version=0.3.0" ];
+          ldflags = [ "-s" "-w" "-X main.version=0.3.1" ];
           meta = {
             description = "cd into a directory, get an SSH session — for humans and AI agents";
             homepage = "https://github.com/KirisameLonnet/ashpipe";
