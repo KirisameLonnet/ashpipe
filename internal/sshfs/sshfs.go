@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -64,7 +65,45 @@ func IsMounted(localDir string) bool {
 	if err != nil {
 		return false
 	}
-	return strings.Contains(string(out), localDir)
+	target, err := filepath.Abs(localDir)
+	if err != nil {
+		target = localDir
+	}
+	for _, line := range strings.Split(string(out), "\n") {
+		if mountTarget(line) == target {
+			return true
+		}
+	}
+	return false
+}
+
+// MustNotBeMounted returns an error if localDir is currently a mount point.
+// Call this immediately before any recursive delete operation.
+func MustNotBeMounted(localDir string) error {
+	if IsMounted(localDir) {
+		return fmt.Errorf("%s is still mounted; refusing to delete recursively", localDir)
+	}
+	return nil
+}
+
+func mountTarget(line string) string {
+	if line == "" {
+		return ""
+	}
+	// macOS:
+	//   user@host:/path on /mount/path (macfuse, ...)
+	// Linux:
+	//   user@host:/path on /mount/path type fuse.sshfs (...)
+	_, rest, ok := strings.Cut(line, " on ")
+	if !ok {
+		return ""
+	}
+	for _, sep := range []string{" type ", " ("} {
+		if target, _, ok := strings.Cut(rest, sep); ok {
+			return target
+		}
+	}
+	return ""
 }
 
 func buildArgs(h config.Host, remotePath, localDir string) []string {

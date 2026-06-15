@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/KirisameLonnet/ashpipe/internal/config"
+	"github.com/KirisameLonnet/ashpipe/internal/portal"
 	"github.com/spf13/cobra"
 )
 
@@ -76,9 +77,7 @@ var addCmd = &cobra.Command{
 			return err
 		}
 
-		// Create the portal directory.
-		portalDir := filepath.Join(root, portalName)
-		if err := os.MkdirAll(portalDir, 0o755); err != nil {
+		if err := ensurePortalLink(root, portalName); err != nil {
 			return err
 		}
 
@@ -98,6 +97,37 @@ var addCmd = &cobra.Command{
 	},
 }
 
+func ensurePortalLink(root, name string) error {
+	mountDir := portal.MountDir(root, name)
+	linkDir := portal.LinkDir(root, name)
+	if err := os.MkdirAll(mountDir, 0o755); err != nil {
+		return err
+	}
+	info, err := os.Lstat(linkDir)
+	if err == nil {
+		if info.Mode()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(linkDir)
+			if err != nil {
+				return err
+			}
+			if target == mountDir {
+				return nil
+			}
+			return fmt.Errorf("%s already exists as a symlink to %s, not %s", linkDir, target, mountDir)
+		}
+		if info.IsDir() {
+			if err := os.Remove(linkDir); err == nil {
+				return os.Symlink(mountDir, linkDir)
+			}
+		}
+		return fmt.Errorf("%s already exists and is not an ashpipe symlink", linkDir)
+	}
+	if !os.IsNotExist(err) {
+		return err
+	}
+	return os.Symlink(mountDir, linkDir)
+}
+
 func init() {
 	addCmd.Flags().StringP("identity-file", "i", "", "SSH private key path")
 	addCmd.Flags().StringP("password", "p", "", "SSH password (insecure)")
@@ -107,7 +137,11 @@ func init() {
 func writeAgentContext(root string, cfg *config.Config) error {
 	var sb strings.Builder
 	sb.WriteString("# ashpipe Remote Workspace\n\n")
-	sb.WriteString("This workspace contains remote portal directories managed by ashpipe. Portal directories are intended to be mounted with SSHFS and used as normal local directories.\n\n")
+	sb.WriteString("This workspace contains remote portal directories managed by ashpipe. Public portal paths are symlinks to private SSHFS mount points outside the workspace.\n\n")
+	sb.WriteString("## Safety Warning\n\n")
+	sb.WriteString("- Do not manually delete ashpipe portal paths or mount directories with `rm -rf`.\n")
+	sb.WriteString("- Use `ashpipe unmount` and `ashpipe remove`; ashpipe manages portal symlinks and SSHFS mount points.\n")
+	sb.WriteString("- If manual cleanup is unavoidable, unmount first and verify the path is no longer a mount point. Deleting a live SSHFS/FUSE mount can delete remote files.\n\n")
 	sb.WriteString("## Portals\n\n")
 	for name, p := range cfg.Portals {
 		h := cfg.Hosts[p.Host]

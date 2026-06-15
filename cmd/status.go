@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/KirisameLonnet/ashpipe/internal/config"
+	portalpath "github.com/KirisameLonnet/ashpipe/internal/portal"
 	"github.com/KirisameLonnet/ashpipe/internal/sshfs"
 	"github.com/spf13/cobra"
-	"path/filepath"
 )
 
 var statusCmd = &cobra.Command{
@@ -34,8 +34,8 @@ var statusCmd = &cobra.Command{
 
 		for name, portal := range cfg.Portals {
 			host := cfg.Hosts[portal.Host]
-			localDir := filepath.Join(root, name)
-			mounted := sshfs.IsMounted(localDir)
+			mountDir := portalpath.MountDir(root, name)
+			mounted := sshfs.IsMounted(mountDir)
 			mountStatus := "unmounted"
 			if mounted {
 				mountStatus = "mounted"

@@ -3,9 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/KirisameLonnet/ashpipe/internal/config"
+	portalpath "github.com/KirisameLonnet/ashpipe/internal/portal"
 	"github.com/KirisameLonnet/ashpipe/internal/sshfs"
 	"github.com/spf13/cobra"
 )
@@ -93,29 +93,33 @@ func mountOne(root string, cfg *config.Config, name string) error {
 		return err
 	}
 
-	localDir := filepath.Join(root, name)
-	if sshfs.IsMounted(localDir) {
-		fmt.Printf("[ashpipe] %s already mounted at %s\n", name, localDir)
+	if err := ensurePortalLink(root, name); err != nil {
+		return err
+	}
+
+	mountDir := portalpath.MountDir(root, name)
+	if sshfs.IsMounted(mountDir) {
+		fmt.Printf("[ashpipe] %s already mounted at %s\n", name, mountDir)
 		return nil
 	}
 
 	remotePath := resolveRemotePath(host, portal.RemotePath)
 	fmt.Fprintf(os.Stderr, "[ashpipe] Mounting %s@%s:%s -> %s\n",
-		host.User, host.Hostname, remotePath, localDir)
-	if err := sshfs.Mount(host, remotePath, localDir); err != nil {
+		host.User, host.Hostname, remotePath, mountDir)
+	if err := sshfs.Mount(host, remotePath, mountDir); err != nil {
 		return fmt.Errorf("mounting %s: %w", name, err)
 	}
 	return nil
 }
 
 func unmountOne(root string, name string) error {
-	localDir := filepath.Join(root, name)
-	if !sshfs.IsMounted(localDir) {
+	mountDir := portalpath.MountDir(root, name)
+	if !sshfs.IsMounted(mountDir) {
 		fmt.Printf("[ashpipe] %s is not mounted\n", name)
 		return nil
 	}
-	fmt.Fprintf(os.Stderr, "[ashpipe] Unmounting %s ...\n", localDir)
-	if err := sshfs.Unmount(localDir); err != nil {
+	fmt.Fprintf(os.Stderr, "[ashpipe] Unmounting %s ...\n", mountDir)
+	if err := sshfs.Unmount(mountDir); err != nil {
 		return fmt.Errorf("unmounting %s: %w", name, err)
 	}
 	return nil

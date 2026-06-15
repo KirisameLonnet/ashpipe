@@ -3,8 +3,10 @@ package detect
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/KirisameLonnet/ashpipe/internal/config"
+	portalpath "github.com/KirisameLonnet/ashpipe/internal/portal"
 )
 
 type Result struct {
@@ -32,28 +34,15 @@ func FromDir(dir string) (*Result, error) {
 		return nil, err
 	}
 
-	// Check if abs is inside one of the portal directories.
+	realAbs, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		realAbs = abs
+	}
+
+	// Check if abs is inside one of the user-facing portal directories or their
+	// private mount directories.
 	for name := range cfg.Portals {
-		portalDir := filepath.Join(root, name)
-		rel, err := filepath.Rel(portalDir, abs)
-		if err != nil {
-			continue
-		}
-		// rel starts with ".." means abs is not inside portalDir
-		if len(rel) > 0 && rel[0] != '.' {
-			portal, host, err := cfg.ResolvePortal(name)
-			if err != nil {
-				return nil, err
-			}
-			return &Result{
-				WorkspaceRoot: root,
-				PortalName:    name,
-				Portal:        portal,
-				Host:          host,
-			}, nil
-		}
-		// exact match (rel == ".")
-		if rel == "." {
+		if pathInside(portalpath.LinkDir(root, name), abs) || pathInside(portalpath.MountDir(root, name), realAbs) {
 			portal, host, err := cfg.ResolvePortal(name)
 			if err != nil {
 				return nil, err
@@ -67,6 +56,28 @@ func FromDir(dir string) (*Result, error) {
 		}
 	}
 	return nil, nil
+}
+
+func pathInside(base, path string) bool {
+	base = canonicalPath(base)
+	path = canonicalPath(path)
+	rel, err := filepath.Rel(base, path)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)))
+}
+
+func canonicalPath(path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		abs = path
+	}
+	real, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		return abs
+	}
+	return real
 }
 
 // FromCwd detects portal from the current working directory.

@@ -8,15 +8,37 @@ cd workspace/remote-space-prod/   →   terminal becomes a remote SSH session
 
 ashpipe turns a local directory into a transparent portal to a remote host. File access goes through SSHFS (you see real remote files), and the terminal pty is handed directly to the remote shell. For AI agents (Claude Code, Codex), mounted portal directories are ordinary local directories, so built-in file tools can read, edit, diff, and search without switching to ashpipe-specific tools.
 
+## Safety warning
+
+Do **not** manually delete ashpipe portal paths or mount directories with
+`rm -rf`. ashpipe manages them. Use `ashpipe unmount` and `ashpipe remove`
+instead.
+
+If you must clean anything manually, unmount first and verify it is no longer a
+mount point:
+
+```bash
+ashpipe unmount <portal>
+mount | grep ashpipe
+```
+
+Deleting a live SSHFS/FUSE mount can delete files on the remote host.
+
 ## How it works
 
 ```
 workspace/
 ├── .ashpipe/
 │   └── config.yaml          ← host and portal definitions
-├── remote-space-prod/       ← portal: cd here → SSH session on prod
-└── remote-space-dev/        ← portal: cd here → SSH session on dev
+├── remote-space-prod -> /Volumes/ashpipe/<workspace-id>/remote-space-prod      # macOS
+└── remote-space-dev  -> /media/$USER/ashpipe/<workspace-id>/remote-space-dev   # Linux
 ```
+
+The real SSHFS mount points live outside the workspace (for example under
+`/Volumes/ashpipe` on macOS or `/media/$USER/ashpipe` on Linux). This mirrors
+where external drives normally appear, making it clear that the portal target is
+a mounted filesystem. It also keeps `rm -rf remote-space-prod` and
+`rm -rf .ashpipe` from recursing into remote files.
 
 **User path** — shell hook detects portal directory on `cd`, mounts SSHFS, hands terminal to remote shell. On `exit`, SSHFS is automatically unmounted.
 

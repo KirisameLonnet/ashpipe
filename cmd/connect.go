@@ -11,6 +11,7 @@ import (
 
 	"github.com/KirisameLonnet/ashpipe/internal/config"
 	"github.com/KirisameLonnet/ashpipe/internal/detect"
+	portalpath "github.com/KirisameLonnet/ashpipe/internal/portal"
 	"github.com/KirisameLonnet/ashpipe/internal/sshfs"
 	"github.com/spf13/cobra"
 )
@@ -44,8 +45,11 @@ var connectCmd = &cobra.Command{
 			return err
 		}
 
-		localDir := filepath.Join(root, portalName)
-		return connectPortal(host, portal, localDir)
+		if err := ensurePortalLink(root, portalName); err != nil {
+			return err
+		}
+		mountDir := portalpath.MountDir(root, portalName)
+		return connectPortal(host, portal, mountDir)
 	},
 }
 

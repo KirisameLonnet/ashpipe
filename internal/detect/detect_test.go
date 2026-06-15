@@ -7,11 +7,13 @@ import (
 
 	"github.com/KirisameLonnet/ashpipe/internal/config"
 	"github.com/KirisameLonnet/ashpipe/internal/detect"
+	portalpath "github.com/KirisameLonnet/ashpipe/internal/portal"
 )
 
 func setupWorkspace(t *testing.T) (root string) {
 	t.Helper()
 	root = t.TempDir()
+	t.Setenv("ASHPIPE_MOUNT_DIR", filepath.Join(t.TempDir(), "mounts"))
 
 	cfg := &config.Config{
 		Hosts: map[string]config.Host{
@@ -24,9 +26,12 @@ func setupWorkspace(t *testing.T) (root string) {
 	if err := config.Save(root, cfg); err != nil {
 		t.Fatalf("setup: %v", err)
 	}
-	// Create portal directory.
-	if err := os.MkdirAll(filepath.Join(root, "remote-space-prod", "src"), 0o755); err != nil {
+	mountDir := portalpath.MountDir(root, "remote-space-prod")
+	if err := os.MkdirAll(filepath.Join(mountDir, "src"), 0o755); err != nil {
 		t.Fatalf("setup mkdir: %v", err)
+	}
+	if err := os.Symlink(mountDir, portalpath.LinkDir(root, "remote-space-prod")); err != nil {
+		t.Fatalf("setup symlink: %v", err)
 	}
 	return root
 }
@@ -60,6 +65,22 @@ func TestDetectInsidePortalSubdir(t *testing.T) {
 	}
 	if result == nil {
 		t.Fatal("expected portal detection inside subdir, got nil")
+	}
+	if result.PortalName != "remote-space-prod" {
+		t.Errorf("PortalName = %q, want remote-space-prod", result.PortalName)
+	}
+}
+
+func TestDetectInsideSymlinkedPortalSubdir(t *testing.T) {
+	root := setupWorkspace(t)
+	subDir := filepath.Join(root, "remote-space-prod", "src")
+
+	result, err := detect.FromDir(subDir)
+	if err != nil {
+		t.Fatalf("FromDir: %v", err)
+	}
+	if result == nil {
+		t.Fatal("expected portal detection inside symlinked portal subdir, got nil")
 	}
 	if result.PortalName != "remote-space-prod" {
 		t.Errorf("PortalName = %q, want remote-space-prod", result.PortalName)
