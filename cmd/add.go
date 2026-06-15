@@ -13,7 +13,7 @@ import (
 var addCmd = &cobra.Command{
 	Use:   "add <portal-name> <user@host:remote-path>",
 	Short: "Add a portal to the current workspace",
-	Example: `  ashpipe add prod ubuntu@server.com:/opt/app remote-space-prod
+	Example: `  ashpipe add prod ubuntu@server.com:/opt/app
   ashpipe add dev developer@dev.example.com:/home/developer/project`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {

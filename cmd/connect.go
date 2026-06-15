@@ -127,12 +127,22 @@ func buildSSHArgv(host config.Host, remotePath string) []string {
 }
 
 func findSSH() (string, error) {
-	for _, p := range []string{"/usr/bin/ssh", "/usr/local/bin/ssh", "/opt/homebrew/bin/ssh"} {
+	// Prefer known absolute paths to avoid shell aliases (e.g. kitten ssh, custom wrappers).
+	for _, p := range []string{
+		"/usr/bin/ssh",
+		"/usr/local/bin/ssh",
+		"/opt/homebrew/bin/ssh",
+		"/nix/var/nix/profiles/default/bin/ssh",
+	} {
 		if _, err := os.Stat(p); err == nil {
 			return p, nil
 		}
 	}
-	return "", fmt.Errorf("ssh not found in standard locations")
+	// Last resort: resolve via PATH, but only accept real binaries (not scripts).
+	if p, err := exec.LookPath("ssh"); err == nil {
+		return p, nil
+	}
+	return "", fmt.Errorf("ssh binary not found; ensure openssh-client is installed")
 }
 
 func expandSSHHome(path string) string {

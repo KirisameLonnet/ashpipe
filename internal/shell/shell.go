@@ -36,10 +36,11 @@ type Result struct {
 // dialFn is used to re-establish the connection on failure.
 func New(client *ssh.Client, initialCwd string, dialFn DialFunc) (*Shell, error) {
 	sh := &Shell{
-		dial:     dialFn,
-		client:   client,
-		cwd:      initialCwd,
-		initArgs: fmt.Sprintf("export PS1='' PS2='' HISTFILE=/dev/null && cd %q", initialCwd),
+		dial:   dialFn,
+		client: client,
+		cwd:    initialCwd,
+		// Use $HOME for ~ so the shell expands it correctly (quoting prevents tilde expansion).
+		initArgs: fmt.Sprintf("export PS1='' PS2='' HISTFILE=/dev/null && cd %s", shellescape(initialCwd)),
 	}
 	if err := sh.startSession(); err != nil {
 		return nil, err
@@ -138,7 +139,7 @@ func (s *Shell) reconnect() error {
 	s.client = client
 
 	// Restore to last known cwd.
-	s.initArgs = fmt.Sprintf("export PS1='' PS2='' HISTFILE=/dev/null && cd %q", s.cwd)
+	s.initArgs = fmt.Sprintf("export PS1='' PS2='' HISTFILE=/dev/null && cd %s", shellescape(s.cwd))
 	return s.startSession()
 }
 
@@ -171,6 +172,15 @@ func (s *Shell) run(command string, timeout time.Duration) (*Result, error) {
 		time.Sleep(50 * time.Millisecond)
 	}
 	return nil, fmt.Errorf("command timed out after %s", timeout)
+}
+
+// shellescape quotes a path for use in shell commands.
+// ~ and ~/ are left unquoted so the shell expands them.
+func shellescape(path string) string {
+	if path == "~" || strings.HasPrefix(path, "~/") {
+		return path
+	}
+	return fmt.Sprintf("%q", path)
 }
 
 type safeBuffer struct {

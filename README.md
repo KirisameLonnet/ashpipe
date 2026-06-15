@@ -18,7 +18,7 @@ workspace/
 └── remote-space-dev/        ← portal: cd here → SSH session on dev
 ```
 
-**Human path** — shell hook detects portal directory on `cd`, mounts SSHFS, hands terminal to remote shell. On `exit`, SSHFS is automatically unmounted.
+**User path** — shell hook detects portal directory on `cd`, mounts SSHFS, hands terminal to remote shell. On `exit`, SSHFS is automatically unmounted.
 
 **Agent path** — `ashpipe mcp` starts an MCP server (stdio) that exposes `bash`, `read`, `write`, `edit`, `diff`, `ls`, `glob` tools backed by the same SSH connection.
 
@@ -26,15 +26,47 @@ Both paths share one SSH connection pool — no duplicate handshakes.
 
 ## Requirements
 
-| Platform | Requirements |
-|----------|-------------|
-| macOS    | [macFUSE](https://osxfuse.github.io) + `brew install sshfs` |
-| Linux    | `sudo apt install sshfs` (or equivalent) |
+| Platform | SSHFS | Notes |
+|----------|-------|-------|
+| macOS    | [macFUSE](https://osxfuse.github.io) + `brew install sshfs` | macFUSE requires manual install (kernel extension) |
+| Linux    | `sudo apt install sshfs` | or `dnf install fuse-sshfs` / `pacman -S sshfs` |
+| NixOS    | provided by `flake.nix` dev shell | see below |
 
 SSH host must already be in `~/.ssh/known_hosts`. Connect manually once if not:
 ```bash
 ssh user@hostname
 ```
+
+### Nix / NixOS
+
+ashpipe ships a `flake.nix` with full cross-platform support (Linux x86_64/aarch64, macOS aarch64/x86_64).
+
+```bash
+# Enter dev shell (provides go, sshfs, gopls, gotools)
+nix develop
+
+# Build the binary
+nix build
+./result/bin/ashpipe --help
+```
+
+Add to your NixOS `configuration.nix` or `home.nix`:
+
+```nix
+# flake input
+inputs.ashpipe.url = "github:KirisameLonnet/ashpipe";
+
+# package
+environment.systemPackages = [ inputs.ashpipe.packages.${system}.default ];
+# or with home-manager
+home.packages = [ inputs.ashpipe.packages.${system}.default ];
+```
+
+On **macOS with Nix**, macFUSE cannot be managed by Nix (kernel extension). Install it separately:
+1. Download from [osxfuse.github.io](https://osxfuse.github.io) and install
+2. `brew install sshfs`
+
+On **NixOS**, sshfs is included in the dev shell and available as `pkgs.sshfs-fuse`.
 
 ## Install
 
@@ -153,6 +185,8 @@ File paths are automatically translated: local portal paths → remote paths.
 ```bash
 ashpipe add prod ubuntu@prod.example.com:/opt/app
 ashpipe add dev developer@dev.example.com:/home/dev/project
+
+# portal directories are created automatically: prod/ and dev/
 
 # cd prod/   → SSH session on prod
 # cd dev/    → SSH session on dev

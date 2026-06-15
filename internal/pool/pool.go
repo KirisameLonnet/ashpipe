@@ -68,7 +68,17 @@ func dial(h config.Host) (*ssh.Client, error) {
 		User:            h.User,
 		Auth:            authMethods,
 		HostKeyCallback: hostKeyCallback,
-		Timeout:         15 * time.Second,
+		// Explicit algorithm order ensures we negotiate the same key type
+		// that is stored in known_hosts, avoiding "key mismatch" errors
+		// when the server (e.g. dropbear) offers multiple key types.
+		HostKeyAlgorithms: []string{
+			ssh.KeyAlgoED25519,
+			ssh.KeyAlgoECDSA256,
+			ssh.KeyAlgoECDSA384,
+			ssh.KeyAlgoECDSA521,
+			ssh.KeyAlgoRSA,
+		},
+		Timeout: 15 * time.Second,
 	}
 
 	addr := fmt.Sprintf("%s:%d", h.Hostname, h.Port)

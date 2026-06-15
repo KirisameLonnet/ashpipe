@@ -119,9 +119,11 @@ func (s *Server) getSession(hostHint string) (*session, config.Portal, config.Ho
 		return nil, config.Portal{}, config.Host{}, fmt.Errorf("shell: %w", err)
 	}
 
-	sc, err := sftp.New(conn)
-	if err != nil {
-		return nil, config.Portal{}, config.Host{}, fmt.Errorf("sftp: %w", err)
+	// SFTP is optional — some servers (e.g. dropbear on routers) don't support it.
+	// bash/ls/glob tools still work without it; file tools return a clear error.
+	var sc *sftp.Client
+	if s, err := sftp.New(conn); err == nil {
+		sc = s
 	}
 
 	sess := &session{sh: sh, sftp: sc}
@@ -189,6 +191,9 @@ func (s *Server) handleRead(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	if sess.sftp == nil {
+		return mcp.NewToolResultError("SFTP not available on this host; use bash with cat instead"), nil
+	}
 
 	remotePath := s.translatePath(path, portal)
 	data, err := sess.sftp.ReadFile(remotePath)
@@ -206,6 +211,9 @@ func (s *Server) handleWrite(ctx context.Context, req mcp.CallToolRequest) (*mcp
 	sess, portal, _, err := s.getSession(hostHint)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
+	}
+	if sess.sftp == nil {
+		return mcp.NewToolResultError("SFTP not available on this host; use bash with tee/cat instead"), nil
 	}
 
 	remotePath := s.translatePath(path, portal)
@@ -225,6 +233,9 @@ func (s *Server) handleEdit(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	if sess.sftp == nil {
+		return mcp.NewToolResultError("SFTP not available on this host"), nil
+	}
 
 	remotePath := s.translatePath(path, portal)
 	if err := sess.sftp.EditFile(remotePath, oldStr, newStr); err != nil {
@@ -241,6 +252,9 @@ func (s *Server) handleDiff(ctx context.Context, req mcp.CallToolRequest) (*mcp.
 	sess, portal, _, err := s.getSession(hostHint)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
+	}
+	if sess.sftp == nil {
+		return mcp.NewToolResultError("SFTP not available on this host; use bash with diff instead"), nil
 	}
 
 	diff, err := sess.sftp.Diff(
@@ -260,6 +274,14 @@ func (s *Server) handleLs(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 	sess, portal, _, err := s.getSession(hostHint)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
+	}
+	// Fall back to bash ls when SFTP is unavailable.
+	if sess.sftp == nil {
+		result, err := sess.sh.Exec(fmt.Sprintf("ls -la %s", path), 10*time.Second)
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+		return mcp.NewToolResultText(result.Stdout), nil
 	}
 
 	entries, err := sess.sftp.ListDir(s.translatePath(path, portal))
