@@ -323,6 +323,22 @@ codex plugin add ashpipe@ashpipe
 - Tells Codex to use native file tools on mounted portal directories, not MCP or SSH file fallbacks
 - Repeats the safety rule: never manually `rm -rf` portal symlinks or mount directories
 
+### Other agent tools
+
+For agent tools not listed above, prefer asking the agent to install or import
+the ashpipe skill from this repository instead of manually copying workflow
+notes into every session. The agent should learn the workflow itself:
+
+- Detect an ashpipe workspace by `.ashpipe/config.yaml`
+- Run `ashpipe mount` from the workspace root before touching portal contents
+- Use its native read, edit, write, search, and diff tools on portal directories
+- Avoid MCP or SSH file-tool fallbacks for normal file operations
+- Never manually delete portal symlinks or mount directories; use `ashpipe unmount`
+  and `ashpipe remove`
+
+If an agent has no plugin or skill mechanism, use the manual setup below and
+rely on the generated `AGENTS.md` guidance in the workspace.
+
 ### Manual agent setup (without plugin)
 
 If you prefer not to install the plugin:
