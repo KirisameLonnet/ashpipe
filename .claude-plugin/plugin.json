@@ -1,18 +1,18 @@
 {
   "name": "ashpipe",
-  "displayName": "ashpipe",
   "version": "0.2.1",
-  "description": "cd into a directory, get an SSH session — transparent remote workspace for Claude Code",
+  "description": "Transparent remote workspace portals with SSHFS auto-mount and shell hook for Claude Code.",
   "author": {
     "name": "KirisameLonnet",
     "email": "szfsy06@gmail.com",
     "url": "https://github.com/KirisameLonnet"
   },
-  "repository": "https://github.com/KirisameLonnet/ashpipe",
   "homepage": "https://github.com/KirisameLonnet/ashpipe",
+  "repository": "https://github.com/KirisameLonnet/ashpipe",
   "license": "MIT",
   "keywords": ["ssh", "remote", "sshfs", "workspace", "portal"],
-  "defaultEnabled": true,
-  "skills": "./skills/",
+  "skills": [
+    "./.claude/skills/ashpipe-mount"
+  ],
   "hooks": "./hooks/hooks.json"
 }

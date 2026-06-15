@@ -1,4 +1,5 @@
 {
+  "description": "Auto-mount ashpipe portals when Claude Code starts in an ashpipe workspace",
   "hooks": {
     "SessionStart": [
       {

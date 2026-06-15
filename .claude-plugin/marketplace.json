@@ -6,16 +6,23 @@
     "name": "KirisameLonnet",
     "email": "szfsy06@gmail.com"
   },
+  "metadata": {
+    "description": "cd into a directory, get an SSH session — transparent remote workspace portals",
+    "version": "0.2.1"
+  },
   "plugins": [
     {
       "name": "ashpipe",
       "description": "Transparent remote workspace portals with SSHFS auto-mount and shell hook for Claude Code",
+      "version": "0.2.1",
       "author": {
         "name": "KirisameLonnet"
       },
-      "category": "Productivity",
+      "keywords": ["ssh", "remote", "sshfs", "workspace", "portal"],
+      "category": "productivity",
       "source": "./",
-      "homepage": "https://github.com/KirisameLonnet/ashpipe"
+      "homepage": "https://github.com/KirisameLonnet/ashpipe",
+      "strict": false
     }
   ]
 }
