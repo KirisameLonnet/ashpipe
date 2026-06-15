@@ -13,8 +13,11 @@ var rootCmd = &cobra.Command{
   ashpipe mount                    →  mount portals for native agent file tools
 
 Quick start:
-  ashpipe hook zsh                    # add output to your shell config
+  mkdir -p ~/workspaces/prod-servers
+  cd ~/workspaces/prod-servers
+  ashpipe init                        # create the stable workspace relationship
   ashpipe add prod ubuntu@host:/path
+  ashpipe hook zsh                    # add output to your shell config once
   ashpipe mount                       # optional: mount portals for agents
   cd prod/                            # you're now on the remote host`,
 }

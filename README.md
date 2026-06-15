@@ -158,25 +158,37 @@ sudo mv ashpipe /usr/local/bin/
 
 ## Quick start
 
+ashpipe is workspace-based. The first decision is where the stable local
+workspace should live. That directory is the durable relationship between your
+machine, the portal names, and the remote paths. Do not initialize ashpipe in a
+temporary download folder or in a random directory you do not plan to keep.
+
 ```bash
-# 1. Initialize a workspace
-mkdir my-workspace && cd my-workspace
+# 1. Pick or create a stable workspace directory
+mkdir -p ~/workspaces/prod-servers
+cd ~/workspaces/prod-servers
+
+# 2. Initialize ashpipe metadata in this workspace
 ashpipe init
 
-# 2. Add a portal
+# 3. Follow the init guidance and add a portal
 ashpipe add prod ubuntu@server.example.com:/opt/app
 
-# 3. Add shell hook — run this to see the line to add to your config:
+# 4. Add the shell hook once, in your shell startup config
 ashpipe hook zsh   # or bash / fish
 
-# 4. Mount portals for agent-native file access
+# 5. Mount portals for agent-native file access
 ashpipe mount       # mounted portal dirs behave like normal local dirs
 
-# 5. Connect by entering the portal directory
+# 6. Connect by entering the portal directory
 cd prod/          # ← terminal is now a remote SSH session on ubuntu@server.example.com:/opt/app
 pwd               # returns /opt/app
 exit              # back to local shell, SSHFS unmounted automatically
 ```
+
+After `ashpipe init`, the workspace owns `.ashpipe/config.yaml`, generated
+agent instructions, and portal symlinks. Return to this same workspace whenever
+you want to work with the same remote directories.
 
 ## CLI reference
 
