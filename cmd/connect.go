@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/KirisameLonnet/ashpipe/internal/config"
@@ -53,13 +54,16 @@ func init() {
 }
 
 func connectPortal(host config.Host, portal config.Portal, localDir string) error {
+	// Resolve ~ to actual remote $HOME before using in sshfs or ssh command.
+	remotePath := resolveRemotePath(host, portal.RemotePath)
+
 	// Mount SSHFS for file transparency. If it fails (e.g. host runs dropbear
 	// without sftp-server), warn and continue — shell access still works.
 	sshfsMounted := sshfs.IsMounted(localDir)
 	if !sshfsMounted {
 		fmt.Fprintf(os.Stderr, "[ashpipe] Mounting %s@%s:%s → %s\n",
-			host.User, host.Hostname, portal.RemotePath, localDir)
-		if err := sshfs.Mount(host, portal.RemotePath, localDir); err != nil {
+			host.User, host.Hostname, remotePath, localDir)
+		if err := sshfs.Mount(host, remotePath, localDir); err != nil {
 			fmt.Fprintf(os.Stderr,
 				"[ashpipe] WARNING: SSHFS mount failed (%v)\n"+
 					"          File transparency unavailable — portal directory will be empty.\n"+
@@ -76,7 +80,7 @@ func connectPortal(host config.Host, portal config.Portal, localDir string) erro
 		return err
 	}
 
-	argv := buildSSHArgv(host, portal.RemotePath)
+	argv := buildSSHArgv(host, remotePath)
 	fmt.Fprintf(os.Stderr, "[ashpipe] Connecting to %s@%s ...\n", host.User, host.Hostname)
 
 	// Run SSH as a child process so we can unmount SSHFS after the session ends.
@@ -128,11 +132,49 @@ func buildSSHArgv(host config.Host, remotePath string) []string {
 	if host.IdentityFile != "" {
 		args = append(args, "-i", expandSSHHome(host.IdentityFile))
 	}
-	args = append(args,
-		fmt.Sprintf("%s@%s", host.User, host.Hostname),
-		fmt.Sprintf("cd %q && exec $SHELL -l", remotePath),
-	)
+	// Build remote command: cd to target dir then start login shell.
+	// Use an absolute path — ~ has already been resolved by resolveRemotePath.
+	remoteCmd := fmt.Sprintf("cd %q && exec $SHELL -l", remotePath)
+	args = append(args, fmt.Sprintf("%s@%s", host.User, host.Hostname), remoteCmd)
 	return args
+}
+
+// resolveRemotePath resolves ~ and ~/ to the actual remote $HOME by running
+// a quick non-interactive SSH command. Returns the original path on failure.
+func resolveRemotePath(host config.Host, remotePath string) string {
+	if remotePath != "~" && !strings.HasPrefix(remotePath, "~/") {
+		return remotePath
+	}
+
+	sshPath, err := findSSH()
+	if err != nil {
+		return remotePath
+	}
+
+	args := []string{
+		"-p", fmt.Sprintf("%d", host.Port),
+		"-o", "StrictHostKeyChecking=yes",
+		"-o", "BatchMode=yes",
+	}
+	if host.IdentityFile != "" {
+		args = append(args, "-i", expandSSHHome(host.IdentityFile))
+	}
+	args = append(args, fmt.Sprintf("%s@%s", host.User, host.Hostname), "echo $HOME")
+
+	out, err := exec.Command(sshPath, args...).Output()
+	if err != nil {
+		return remotePath
+	}
+
+	home := strings.TrimSpace(string(out))
+	if home == "" {
+		return remotePath
+	}
+	if remotePath == "~" {
+		return home
+	}
+	// ~/some/path → /actual/home/some/path
+	return home + remotePath[1:]
 }
 
 func findSSH() (string, error) {
