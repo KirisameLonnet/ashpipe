@@ -1,0 +1,20 @@
+{
+  "name": "ashpipe",
+  "interface": {
+    "displayName": "ashpipe"
+  },
+  "plugins": [
+    {
+      "name": "ashpipe",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ashpipe"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

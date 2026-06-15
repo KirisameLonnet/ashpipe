@@ -275,62 +275,31 @@ hook from `hooks/hooks.json`.
 
 ashpipe also ships a Codex plugin manifest and skill in this repository:
 
-- `.codex-plugin/plugin.json`
-- `skills/ashpipe-mount/SKILL.md`
-- `scripts/ashpipe-codex-setup.sh`
+- `.agents/plugins/marketplace.json`
+- `plugins/ashpipe/.codex-plugin/plugin.json`
+- `plugins/ashpipe/skills/ashpipe-mount/SKILL.md`
+- `plugins/ashpipe/scripts/ashpipe-codex-setup.sh`
 
-**Install the plugin from a local clone:**
+**Install the plugin:**
 
 ```bash
-git clone https://github.com/KirisameLonnet/ashpipe
-cd ashpipe
-
-# Make the repo visible to the Codex personal plugin marketplace.
-mkdir -p ~/plugins ~/.agents/plugins
-ln -sfn "$PWD" ~/plugins/ashpipe
+codex plugin marketplace add KirisameLonnet/ashpipe --ref main
+codex plugin add ashpipe@ashpipe
 ```
 
-Add this entry to `~/.agents/plugins/marketplace.json` under the `plugins`
-array, preserving any existing entries:
+**Verify installation:**
 
-```json
-{
-  "name": "ashpipe",
-  "source": {
-    "source": "local",
-    "path": "./plugins/ashpipe"
-  },
-  "policy": {
-    "installation": "AVAILABLE",
-    "authentication": "ON_INSTALL"
-  },
-  "category": "Productivity"
-}
+```bash
+codex plugin marketplace list
+codex plugin list --marketplace ashpipe
 ```
 
-If the marketplace file does not exist yet, create it as:
+**Update or reinstall:**
 
-```json
-{
-  "name": "personal",
-  "interface": {
-    "displayName": "Personal"
-  },
-  "plugins": [
-    {
-      "name": "ashpipe",
-      "source": {
-        "source": "local",
-        "path": "./plugins/ashpipe"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    }
-  ]
-}
+```bash
+codex plugin marketplace upgrade ashpipe
+codex plugin remove ashpipe
+codex plugin add ashpipe@ashpipe
 ```
 
 **What the Codex plugin does:**

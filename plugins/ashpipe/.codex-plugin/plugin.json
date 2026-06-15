@@ -1,0 +1,28 @@
+{
+  "name": "ashpipe",
+  "version": "0.2.1",
+  "description": "Codex workflow support for ashpipe SSHFS workspaces.",
+  "author": {
+    "name": "KirisameLonnet",
+    "email": "szfsy06@gmail.com",
+    "url": "https://github.com/KirisameLonnet"
+  },
+  "homepage": "https://github.com/KirisameLonnet/ashpipe",
+  "repository": "https://github.com/KirisameLonnet/ashpipe",
+  "license": "MIT",
+  "keywords": ["ssh", "sshfs", "workspace", "portal", "codex"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ashpipe",
+    "shortDescription": "Mount ashpipe portals before native Codex file work.",
+    "longDescription": "Detect ashpipe workspaces, run ashpipe mount, and then use Codex native file tools against SSHFS-backed portal symlinks. The plugin keeps normal reads, edits, diffs, and searches native while warning against manual deletion of mounted portal paths.",
+    "developerName": "KirisameLonnet",
+    "category": "Productivity",
+    "capabilities": ["Write"],
+    "defaultPrompt": [
+      "Prepare this ashpipe workspace for Codex.",
+      "Mount ashpipe portals before editing.",
+      "Check ashpipe status."
+    ]
+  }
+}
