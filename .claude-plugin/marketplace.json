@@ -14,7 +14,10 @@
         "name": "KirisameLonnet"
       },
       "category": "Productivity",
-      "source": ".",
+      "source": {
+        "source": "github",
+        "repo": "KirisameLonnet/ashpipe"
+      },
       "homepage": "https://github.com/KirisameLonnet/ashpipe"
     }
   ]
