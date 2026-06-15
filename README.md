@@ -111,8 +111,9 @@ eval "$(ashpipe hook zsh)"   # or bash / fish
 
 ### Homebrew / AUR
 
-Homebrew tap and AUR publishing are planned packaging channels. Until those
-repositories are configured, install from GitHub Releases, Nix, Go, or source.
+Homebrew tap publishing is planned. The repository includes an Arch
+`PKGBUILD` under `packaging/aur/` for `ashpipe-bin`; AUR publishing is not
+automated until the AUR key is configured.
 
 ### Nix / home-manager
 ```nix

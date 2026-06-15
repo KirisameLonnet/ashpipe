@@ -1,0 +1,18 @@
+pkgbase = ashpipe-bin
+	pkgdesc = cd into a directory, get an SSH session — for humans and AI agents
+	pkgver = 0.2.1
+	pkgrel = 1
+	url = https://github.com/KirisameLonnet/ashpipe
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	depends = openssh
+	optdepends = sshfs: transparent file access in portal directories
+	provides = ashpipe
+	conflicts = ashpipe
+	source_x86_64 = ashpipe-bin-0.2.1-x86_64.tar.gz::https://github.com/KirisameLonnet/ashpipe/releases/download/v0.2.1/ashpipe_linux_amd64.tar.gz
+	sha256sums_x86_64 = ed6ab038516d62ded56b3680fea42fe285d23d03363a04e3f53825d9c05e99ee
+	source_aarch64 = ashpipe-bin-0.2.1-aarch64.tar.gz::https://github.com/KirisameLonnet/ashpipe/releases/download/v0.2.1/ashpipe_linux_arm64.tar.gz
+	sha256sums_aarch64 = d0795eb16fe51ce6a126a59f30c868d195add83bf49afa216a1c5e78bb95d742
+
+pkgname = ashpipe-bin
