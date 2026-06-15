@@ -48,9 +48,11 @@ func Unmount(localDir string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
-		cmd = exec.Command("umount", localDir)
+		// macFUSE volumes must be unmounted with diskutil, not plain umount.
+		cmd = exec.Command("diskutil", "unmount", localDir)
 	default:
-		cmd = exec.Command("fusermount", "-u", localDir)
+		// -z: lazy unmount — detaches immediately even if still busy.
+		cmd = exec.Command("fusermount", "-uz", localDir)
 	}
 	cmd.Stderr = os.Stderr
 	return cmd.Run()

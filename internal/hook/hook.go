@@ -10,6 +10,8 @@ _ashpipe_hook() {
   portal="$(%s detect 2>/dev/null)"
   if [[ -n "$portal" ]]; then
     %s connect "$portal"
+    # Session ended — step back out of the portal directory.
+    cd ..
   fi
 }
 autoload -Uz add-zsh-hook
@@ -25,6 +27,8 @@ _ashpipe_hook() {
   portal="$(%s detect 2>/dev/null)"
   if [[ -n "$portal" ]]; then
     %s connect "$portal"
+    # Session ended — step back out of the portal directory.
+    cd ..
   fi
 }
 if [[ -n "$PROMPT_COMMAND" ]]; then
@@ -42,6 +46,8 @@ function _ashpipe_hook --on-variable PWD
   set portal (%s detect 2>/dev/null)
   if test -n "$portal"
     %s connect $portal
+    # Session ended — step back out of the portal directory.
+    cd ..
   end
 end
 `, exe, exe)
