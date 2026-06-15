@@ -109,11 +109,22 @@ Once installed via any method below, the hook just works — no full path needed
 eval "$(ashpipe hook zsh)"   # or bash / fish
 ```
 
-### Homebrew / AUR
+### Homebrew
 
-Homebrew tap publishing is planned. The repository includes an Arch
-`PKGBUILD` under `packaging/aur/` for `ashpipe-bin`; AUR publishing is not
-automated until the AUR key is configured.
+```bash
+brew install KirisameLonnet/tap/ashpipe
+```
+
+### Arch Linux
+
+The repository includes an Arch `PKGBUILD` under `packaging/aur/` for
+`ashpipe-bin`. Clone the repository and build it locally:
+
+```bash
+git clone https://github.com/KirisameLonnet/ashpipe.git
+cd ashpipe/packaging/aur
+makepkg -si
+```
 
 ### Nix / home-manager
 ```nix
