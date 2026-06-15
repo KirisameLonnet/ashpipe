@@ -94,8 +94,7 @@ brew install KirisameLonnet/tap/ashpipe
 
 ### AUR (Arch Linux)
 ```bash
-yay -S ashpipe-bin
-# or: paru -S ashpipe-bin
+paru -S ashpipe-bin
 ```
 
 ### Nix / home-manager
