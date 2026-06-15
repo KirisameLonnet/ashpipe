@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v ashpipe >/dev/null 2>&1 && ashpipe detect >/dev/null 2>&1; then ashpipe mount 2>&1; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
