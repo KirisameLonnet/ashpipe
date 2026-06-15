@@ -49,42 +49,6 @@ nfpms:
 checksum:
   name_template: "checksums.txt"
 
-brews:
-  - name: ashpipe
-    repository:
-      owner: KirisameLonnet
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    homepage: "https://github.com/KirisameLonnet/ashpipe"
-    description: "cd into a directory, get an SSH session — for humans and AI agents"
-    license: "MIT"
-    dependencies:
-      - name: sshfs
-        type: optional
-    test: |
-      system "#{bin}/ashpipe", "--help"
-    install: |
-      bin.install "ashpipe"
-
-aurs:
-  - name: ashpipe-bin
-    homepage: "https://github.com/KirisameLonnet/ashpipe"
-    description: "cd into a directory, get an SSH session — for humans and AI agents"
-    maintainers:
-      - "KirisameLonnet <szfsy06@gmail.com>"
-    license: MIT
-    depends:
-      - openssh
-    optdepends:
-      - "sshfs: for transparent file access in portal directories"
-    package: |-
-      install -Dm755 "./ashpipe" "${pkgdir}/usr/bin/ashpipe"
-    git_url: "ssh://aur@aur.archlinux.org/ashpipe-bin.git"
-    private_key: "{{ .Env.AUR_KEY }}"
-    commit_author:
-      name: KirisameLonnet
-      email: szfsy06@gmail.com
-
 changelog:
   sort: asc
   filters:

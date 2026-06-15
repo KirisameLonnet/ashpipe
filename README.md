@@ -87,15 +87,10 @@ Once installed via any method below, the hook just works — no full path needed
 eval "$(ashpipe hook zsh)"   # or bash / fish
 ```
 
-### Homebrew (macOS + Linux)
-```bash
-brew install KirisameLonnet/tap/ashpipe
-```
+### Homebrew / AUR
 
-### AUR (Arch Linux)
-```bash
-paru -S ashpipe-bin
-```
+Homebrew tap and AUR publishing are planned packaging channels. Until those
+repositories are configured, install from GitHub Releases, Nix, Go, or source.
 
 ### Nix / home-manager
 ```nix
