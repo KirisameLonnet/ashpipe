@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v ashpipe >/dev/null 2>&1 && ashpipe status >/dev/null 2>&1; then ashpipe mount 2>&1; fi"
+            "command": "if command -v ashpipe >/dev/null 2>&1; then dir=\"$PWD\"; while [ \"$dir\" != \"/\" ]; do if [ -f \"$dir/.ashpipe/config.yaml\" ]; then (cd \"$dir\" && ashpipe mount 2>&1); break; fi; dir=\"${dir%/*}\"; [ -n \"$dir\" ] || dir=\"/\"; done; fi"
           }
         ]
       }

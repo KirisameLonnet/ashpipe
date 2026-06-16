@@ -1,6 +1,6 @@
 {
   "name": "ashpipe",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Transparent remote workspace portals with SSHFS auto-mount and shell hook for Claude Code.",
   "author": {
     "name": "KirisameLonnet",
@@ -11,8 +11,5 @@
   "repository": "https://github.com/KirisameLonnet/ashpipe",
   "license": "MIT",
   "keywords": ["ssh", "remote", "sshfs", "workspace", "portal"],
-  "skills": [
-    "./.claude/skills/ashpipe-mount"
-  ],
   "hooks": "./hooks/hooks.json"
 }
