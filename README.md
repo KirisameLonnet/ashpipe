@@ -302,7 +302,6 @@ ashpipe also ships a Codex plugin manifest and skill in this repository:
 - `.agents/plugins/marketplace.json`
 - `plugins/ashpipe/.codex-plugin/plugin.json`
 - `plugins/ashpipe/skills/ashpipe-mount/SKILL.md`
-- `plugins/ashpipe/scripts/ashpipe-codex-setup.sh`
 
 **Install the plugin:**
 
@@ -330,7 +329,6 @@ codex plugin add ashpipe@ashpipe
 
 - Activates when `.ashpipe/config.yaml` or ashpipe portal work is detected
 - Tells Codex to run `ashpipe mount` before reading or editing portal contents
-- Provides `scripts/ashpipe-codex-setup.sh` for repeatable workspace preparation
 - Tells Codex to use native file tools on mounted portal directories, not MCP or SSH file fallbacks
 - Repeats the safety rule: never manually `rm -rf` portal symlinks or mount directories
 

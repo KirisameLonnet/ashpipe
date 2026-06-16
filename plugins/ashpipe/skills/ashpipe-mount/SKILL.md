@@ -37,3 +37,9 @@ This workspace uses ashpipe to transparently access remote SSH hosts. Portal dir
 2. Work with files inside portal directories using normal tools
 3. Shell commands inside portals execute locally against SSHFS-mounted files
 4. For remote-only commands (systemctl, apt, etc.), use `ssh user@host "command"`
+
+### Codex setup
+
+When Codex enters an ashpipe workspace, run `ashpipe mount` to mount all portals,
+then `ashpipe status` to verify. After that, portal directories should be treated
+as ordinary workspace directories.

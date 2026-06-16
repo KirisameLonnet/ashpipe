@@ -40,12 +40,6 @@ This workspace uses ashpipe to transparently access remote SSH hosts. Portal dir
 
 ### Codex setup
 
-When Codex enters an ashpipe workspace, run:
-
-```bash
-scripts/ashpipe-codex-setup.sh
-```
-
-The setup script locates `.ashpipe/config.yaml`, verifies the `ashpipe` binary,
-runs `ashpipe mount`, and prints `ashpipe status`. After that, portal directories
-should be treated as ordinary workspace directories.
+When Codex enters an ashpipe workspace, run `ashpipe mount` to mount all portals,
+then `ashpipe status` to verify. After that, portal directories should be treated
+as ordinary workspace directories.
