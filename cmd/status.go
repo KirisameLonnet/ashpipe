@@ -13,6 +13,7 @@ import (
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show portal status for the current workspace",
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cwd, _ := os.Getwd()
 		root, err := config.FindRoot(cwd)
@@ -35,13 +36,9 @@ var statusCmd = &cobra.Command{
 		for name, portal := range cfg.Portals {
 			host := cfg.Hosts[portal.Host]
 			mountDir := portalpath.MountDir(root, name)
-			mounted := sshfs.IsMounted(mountDir)
-			mountStatus := "unmounted"
-			if mounted {
-				mountStatus = "mounted"
-			}
+			health := sshfs.Probe(cmd.Context(), mountDir)
 			fmt.Printf("  %-20s %s@%s:%s  [%s]\n",
-				name, host.User, host.Hostname, portal.RemotePath, mountStatus)
+				name, host.User, host.Hostname, portal.RemotePath, health)
 		}
 		return nil
 	},

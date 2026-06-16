@@ -1,6 +1,6 @@
 {
   "name": "ashpipe",
-  "version": "0.2.1",
+  "version": "0.3.2",
   "description": "Codex workflow support for ashpipe SSHFS workspaces.",
   "author": {
     "name": "KirisameLonnet",

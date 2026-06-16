@@ -51,7 +51,7 @@ var connectCmd = &cobra.Command{
 			return err
 		}
 		mountDir := portalpath.MountDir(root, portalName)
-		return connectPortal(host, portal, mountDir)
+		return connectPortal(cmd.Context(), host, portal, mountDir)
 	},
 }
 
@@ -59,7 +59,7 @@ func init() {
 	rootCmd.AddCommand(connectCmd)
 }
 
-func connectPortal(host config.Host, portal config.Portal, localDir string) error {
+func connectPortal(ctx context.Context, host config.Host, portal config.Portal, localDir string) error {
 	// Resolve ~ to actual remote $HOME before using in sshfs or ssh command.
 	remotePath := resolveRemotePath(host, portal.RemotePath)
 
@@ -69,7 +69,7 @@ func connectPortal(host config.Host, portal config.Portal, localDir string) erro
 	if !sshfsMounted {
 		fmt.Fprintf(os.Stderr, "[ashpipe] Mounting %s@%s:%s → %s\n",
 			host.User, host.Hostname, remotePath, localDir)
-		if err := sshfs.Mount(host, remotePath, localDir); err != nil {
+		if err := sshfs.Mount(ctx, host, remotePath, localDir); err != nil {
 			fmt.Fprintf(os.Stderr,
 				"[ashpipe] WARNING: SSHFS mount failed (%v)\n"+
 					"          File transparency unavailable — portal directory will be empty.\n"+

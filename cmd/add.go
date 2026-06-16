@@ -53,6 +53,10 @@ var addCmd = &cobra.Command{
 			}
 		}
 
+		if _, exists := cfg.Portals[portalName]; exists {
+			return fmt.Errorf("portal %q already exists; remove it first with `ashpipe remove %s`", portalName, portalName)
+		}
+
 		// Derive a host alias from hostname.
 		identityFile, _ := cmd.Flags().GetString("identity-file")
 		password, _ := cmd.Flags().GetString("password")

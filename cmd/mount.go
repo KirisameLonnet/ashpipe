@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -26,20 +28,28 @@ the portal directory without switching to ashpipe-specific tools.`,
 		}
 		cfg.WarnInsecure()
 
+		ctx := cmd.Context()
+
 		if len(args) == 1 {
-			return mountOne(root, cfg, args[0])
+			return mountOne(ctx, root, cfg, args[0])
 		}
 
 		if len(cfg.Portals) == 0 {
 			fmt.Println("No portals configured. Use `ashpipe add` to add one.")
 			return nil
 		}
+		var errs []error
 		for name := range cfg.Portals {
-			if err := mountOne(root, cfg, name); err != nil {
-				return err
+			if ctx.Err() != nil {
+				errs = append(errs, ctx.Err())
+				break
+			}
+			if err := mountOne(ctx, root, cfg, name); err != nil {
+				fmt.Fprintf(os.Stderr, "[ashpipe] %s: %v\n", name, err)
+				errs = append(errs, fmt.Errorf("%s: %w", name, err))
 			}
 		}
-		return nil
+		return errors.Join(errs...)
 	},
 }
 
@@ -54,6 +64,9 @@ var unmountCmd = &cobra.Command{
 		}
 
 		if len(args) == 1 {
+			if _, ok := cfg.Portals[args[0]]; !ok {
+				return fmt.Errorf("portal %q not found", args[0])
+			}
 			return unmountOne(root, args[0])
 		}
 
@@ -87,7 +100,7 @@ func loadWorkspace() (string, *config.Config, error) {
 	return root, cfg, nil
 }
 
-func mountOne(root string, cfg *config.Config, name string) error {
+func mountOne(ctx context.Context, root string, cfg *config.Config, name string) error {
 	portal, host, err := cfg.ResolvePortal(name)
 	if err != nil {
 		return err
@@ -98,16 +111,25 @@ func mountOne(root string, cfg *config.Config, name string) error {
 	}
 
 	mountDir := portalpath.MountDir(root, name)
-	if sshfs.IsMounted(mountDir) {
+
+	switch sshfs.Probe(ctx, mountDir) {
+	case sshfs.Healthy:
 		fmt.Printf("[ashpipe] %s already mounted at %s\n", name, mountDir)
 		return nil
+	case sshfs.Stale:
+		fmt.Fprintf(os.Stderr, "[ashpipe] %s is stale, remounting ...\n", name)
+		_ = sshfs.Unmount(mountDir)
 	}
 
 	remotePath := resolveRemotePath(host, portal.RemotePath)
 	fmt.Fprintf(os.Stderr, "[ashpipe] Mounting %s@%s:%s -> %s\n",
 		host.User, host.Hostname, remotePath, mountDir)
-	if err := sshfs.Mount(host, remotePath, mountDir); err != nil {
-		return fmt.Errorf("mounting %s: %w", name, err)
+	if err := sshfs.Mount(ctx, host, remotePath, mountDir); err != nil {
+		return fmt.Errorf("sshfs: %w", err)
+	}
+
+	if sshfs.Probe(ctx, mountDir) != sshfs.Healthy {
+		return fmt.Errorf("mounted but not responsive (remote path may not exist)")
 	}
 	return nil
 }

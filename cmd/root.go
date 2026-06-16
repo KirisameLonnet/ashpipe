@@ -1,6 +1,11 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"time"
+
 	"github.com/spf13/cobra"
 )
 
@@ -20,6 +25,26 @@ Quick start:
   ashpipe hook zsh                    # add output to your shell config once
   ashpipe mount                       # optional: mount portals for agents
   cd prod/                            # you're now on the remote host`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		timeout, _ := cmd.Flags().GetDuration("timeout")
+		if timeout > 0 {
+			ctx, cancel := context.WithTimeout(cmd.Context(), timeout)
+			_ = cancel // leaked intentionally; context expires on its own
+			cmd.SetContext(ctx)
+		}
+	},
+}
+
+func init() {
+	var def time.Duration
+	if v := os.Getenv("ASHPIPE_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			def = d
+		} else {
+			fmt.Fprintf(os.Stderr, "[ashpipe] WARNING: invalid ASHPIPE_TIMEOUT=%q, using default %s\n", v, def)
+		}
+	}
+	rootCmd.PersistentFlags().Duration("timeout", def, "maximum execution time (0 = no limit)")
 }
 
 func SetVersion(version string) {

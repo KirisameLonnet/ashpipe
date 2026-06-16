@@ -1,6 +1,7 @@
 package sshfs
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,8 +14,64 @@ import (
 	"github.com/KirisameLonnet/ashpipe/internal/config"
 )
 
+const defaultProbeTimeout = 5 * time.Second
+
+type MountHealth int
+
+const (
+	Unmounted MountHealth = iota
+	Healthy
+	Stale
+)
+
+func (h MountHealth) String() string {
+	switch h {
+	case Healthy:
+		return "mounted"
+	case Stale:
+		return "stale"
+	default:
+		return "unmounted"
+	}
+}
+
+// Probe checks whether a mounted SSHFS path is actually responsive.
+// A stale FUSE mount blocks os.Stat indefinitely, so we run it in a
+// goroutine and race against a timeout. The goroutine may leak on
+// timeout — this is unavoidable with blocked kernel VFS calls and is
+// accepted practice (see rclone, nfs-mountpoint-check).
+func Probe(ctx context.Context, localDir string) MountHealth {
+	if !IsMounted(localDir) {
+		return Unmounted
+	}
+	deadline, ok := ctx.Deadline()
+	timeout := defaultProbeTimeout
+	if ok {
+		if remaining := time.Until(deadline); remaining < timeout {
+			timeout = remaining
+		}
+	}
+	if timeout <= 0 {
+		return Stale
+	}
+	ch := make(chan error, 1)
+	go func() {
+		_, err := os.ReadDir(localDir)
+		ch <- err
+	}()
+	select {
+	case err := <-ch:
+		if err != nil {
+			return Stale
+		}
+		return Healthy
+	case <-time.After(timeout):
+		return Stale
+	}
+}
+
 // Mount mounts host:remotePath at localDir via sshfs.
-func Mount(h config.Host, remotePath, localDir string) error {
+func Mount(ctx context.Context, h config.Host, remotePath, localDir string) error {
 	if err := checkDeps(); err != nil {
 		return err
 	}
@@ -32,13 +89,16 @@ func Mount(h config.Host, remotePath, localDir string) error {
 					"Or switch to SSH key auth (recommended).",
 			)
 		}
-		cmd = exec.Command("sshpass", append([]string{"-e", "sshfs"}, sshfsArgs...)...)
+		cmd = exec.CommandContext(ctx, "sshpass", append([]string{"-e", "sshfs"}, sshfsArgs...)...)
 		cmd.Env = append(os.Environ(), "SSHPASS="+h.Password)
 	} else {
-		cmd = exec.Command("sshfs", sshfsArgs...)
+		cmd = exec.CommandContext(ctx, "sshfs", sshfsArgs...)
 	}
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			return fmt.Errorf("sshfs mount timed out: %w", ctx.Err())
+		}
 		return fmt.Errorf("sshfs mount failed: %w", err)
 	}
 	// Brief wait for mount to settle.

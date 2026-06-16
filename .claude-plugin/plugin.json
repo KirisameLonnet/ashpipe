@@ -1,6 +1,6 @@
 {
   "name": "ashpipe",
-  "version": "0.2.1",
+  "version": "0.3.2",
   "description": "Transparent remote workspace portals with SSHFS auto-mount and shell hook for Claude Code.",
   "author": {
     "name": "KirisameLonnet",
