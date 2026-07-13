@@ -8,13 +8,13 @@
   },
   "metadata": {
     "description": "cd into a directory, get an SSH session — transparent remote workspace portals",
-    "version": "0.3.3"
+    "version": "0.3.4"
   },
   "plugins": [
     {
       "name": "ashpipe",
       "description": "Transparent remote workspace portals with SSHFS auto-mount and shell hook for Claude Code",
-      "version": "0.3.3",
+      "version": "0.3.4",
       "author": {
         "name": "KirisameLonnet"
       },

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/KirisameLonnet/ashpipe/internal/config"
 	portalpath "github.com/KirisameLonnet/ashpipe/internal/portal"
@@ -29,28 +30,50 @@ the portal directory without switching to ashpipe-specific tools.`,
 		cfg.WarnInsecure()
 
 		ctx := cmd.Context()
+		bestEffort, _ := cmd.Flags().GetBool("best-effort")
 
 		if len(args) == 1 {
-			return mountOne(ctx, root, cfg, args[0])
+			return mountPortals(ctx, root, cfg, args, bestEffort, mountOne)
 		}
 
 		if len(cfg.Portals) == 0 {
 			fmt.Println("No portals configured. Use `ashpipe add` to add one.")
 			return nil
 		}
-		var errs []error
+		names := make([]string, 0, len(cfg.Portals))
 		for name := range cfg.Portals {
-			if ctx.Err() != nil {
-				errs = append(errs, ctx.Err())
-				break
-			}
-			if err := mountOne(ctx, root, cfg, name); err != nil {
-				fmt.Fprintf(os.Stderr, "[ashpipe] %s: %v\n", name, err)
-				errs = append(errs, fmt.Errorf("%s: %w", name, err))
-			}
+			names = append(names, name)
 		}
-		return errors.Join(errs...)
+		sort.Strings(names)
+		return mountPortals(ctx, root, cfg, names, bestEffort, mountOne)
 	},
+}
+
+type portalMounter func(context.Context, string, *config.Config, string) error
+
+func mountPortals(
+	ctx context.Context,
+	root string,
+	cfg *config.Config,
+	names []string,
+	bestEffort bool,
+	mount portalMounter,
+) error {
+	var errs []error
+	for _, name := range names {
+		if ctx.Err() != nil {
+			errs = append(errs, ctx.Err())
+			break
+		}
+		if err := mount(ctx, root, cfg, name); err != nil {
+			fmt.Fprintf(os.Stderr, "[ashpipe] %s: %v\n", name, err)
+			errs = append(errs, fmt.Errorf("%s: %w", name, err))
+		}
+	}
+	if bestEffort {
+		return nil
+	}
+	return errors.Join(errs...)
 }
 
 var unmountCmd = &cobra.Command{
@@ -85,6 +108,7 @@ var unmountCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(mountCmd, unmountCmd)
+	mountCmd.Flags().Bool("best-effort", false, "Log mount failures without returning an error")
 }
 
 func loadWorkspace() (string, *config.Config, error) {
