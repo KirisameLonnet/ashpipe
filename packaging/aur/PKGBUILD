@@ -13,8 +13,8 @@ conflicts=('ashpipe')
 
 source_x86_64=("$pkgname-$pkgver-x86_64.tar.gz::https://github.com/KirisameLonnet/ashpipe/releases/download/v${pkgver}/ashpipe_linux_amd64.tar.gz")
 source_aarch64=("$pkgname-$pkgver-aarch64.tar.gz::https://github.com/KirisameLonnet/ashpipe/releases/download/v${pkgver}/ashpipe_linux_arm64.tar.gz")
-sha256sums_x86_64=('SKIP')
-sha256sums_aarch64=('SKIP')
+sha256sums_x86_64=('f9a354475ab636d72f5fd2feab9a3cec3f3615e8dff23b477333fe858d300629')
+sha256sums_aarch64=('1283391b242ea9213f9cda9c723cef13ea34eec31c8dfd6c50eeb687f5419e6d')
 
 package() {
   install -Dm755 ashpipe "$pkgdir/usr/bin/ashpipe"
